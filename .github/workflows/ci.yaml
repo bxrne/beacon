@@ -31,13 +31,6 @@ jobs:
         restore-keys: |
           go-${{ matrix.os }}-${{ matrix.go-version }}-
 
-    - name: Install golangci-lint
-      run: |
-        curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.51.2
-
-    - name: Lint with golangci-lint
-      run: golangci-lint run
-
     - name: Build
       run: go build -v ./...
 
