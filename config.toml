@@ -1,0 +1,14 @@
+frequency = 5
+
+log_level = "debug"
+
+[monitoring]
+enable_cpu = true
+enable_memory = true
+enable_disk = true
+
+disk_paths = ["/", "/dev/disk0"]
+
+[labels]
+environment = "production"
+service = "beacon"
