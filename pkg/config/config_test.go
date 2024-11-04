@@ -13,9 +13,6 @@ import (
 // TEST: GIVEN a cfg file WHEN Load is called THEN it should return a valid config
 func TestLoad(t *testing.T) {
 	configContent := `
-frequency = 5
-log_level = "debug"
-
 [monitoring]
 enable_cpu = true
 enable_memory = true
@@ -25,6 +22,8 @@ disk_paths = ["/", "/dev/disk0"]
 [labels]
 environment = "production"
 service = "beacon"
+frequency = 5
+log_level = "debug"
 `
 	tmpFile, err := os.CreateTemp("", "config-*.toml")
 	assert.NoError(t, err)
@@ -37,7 +36,7 @@ service = "beacon"
 	cfg, err := config.Load(tmpFile.Name())
 	assert.NoError(t, err)
 
-	assert.Equal(t, int64(5), cfg.Frequency)
+	assert.Equal(t, int64(5), cfg.Labels.Frequency)
 	assert.Equal(t, log.DebugLevel, cfg.ParsedLogLevel)
 	assert.Equal(t, true, cfg.Monitoring.EnableCPU)
 	assert.Equal(t, true, cfg.Monitoring.EnableMemory)
