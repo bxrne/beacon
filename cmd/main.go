@@ -24,8 +24,12 @@ func main() {
 		"environment", cfg.Labels.Environment,
 	)
 
+	cpuMonitor := stats.CPUMon{}
+	memoryMonitor := stats.MemoryMon{}
+	diskMonitor := stats.DiskMon{}
+
 	for {
-		metrics, err := stats.Collect(cfg)
+		metrics, err := stats.Collect(cfg, cpuMonitor, memoryMonitor, diskMonitor)
 		if err != nil {
 			fmt.Printf("Failed to collect metrics: %v\n", err)
 			continue

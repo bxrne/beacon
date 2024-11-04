@@ -5,12 +5,9 @@ import (
 	"time"
 
 	"github.com/bxrne/beacon/pkg/config"
-	"github.com/shirou/gopsutil/v3/cpu"
-	"github.com/shirou/gopsutil/v3/disk"
-	"github.com/shirou/gopsutil/v3/mem"
 )
 
-func Collect(cfg *config.Config) (DeviceMetrics, error) {
+func Collect(cfg *config.Config, cpu CPUMonitor, memory MemoryMonitor, disk DiskMonitor) (DeviceMetrics, error) {
 	metrics := DeviceMetrics{
 		DiskUsage: make(map[string]float64),
 	}
@@ -24,7 +21,7 @@ func Collect(cfg *config.Config) (DeviceMetrics, error) {
 	}
 
 	if cfg.Monitoring.EnableMemory {
-		virtualMemory, err := mem.VirtualMemory()
+		virtualMemory, err := memory.VirtualMemory()
 		if err != nil {
 			return metrics, fmt.Errorf("failed to get memory usage: %w", err)
 		}
