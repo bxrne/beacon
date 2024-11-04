@@ -1,35 +1,38 @@
-name: CI Pipeline
+name: CI
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
   pull_request:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
-  lint-build-test:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        go-version: ['1.23']
+  build:
+    runs-on: ubuntu-latest
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v2
 
     - name: Set up Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v2
       with:
-        go-version: ${{ matrix.go-version }}
+        go-version: '^1.16'
 
     - name: Cache Go modules
-      uses: actions/cache@v3
+      uses: actions/cache@v2
       with:
-        path: ~/go/pkg/mod
-        key: go-${{ matrix.os }}-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
+        path: |
+          ~/.cache/go-build
+          ${{ github.workspace }}/go.sum
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
         restore-keys: |
-          go-${{ matrix.os }}-${{ matrix.go-version }}-
+          ${{ runner.os }}-go-
+
+    - name: Install dependencies
+      run: go mod tidy
 
     - name: Build
       run: go build -v ./...
