@@ -19,12 +19,16 @@ type Labels struct {
 	Environment string `toml:"environment"`
 	Service     string `toml:"service"`
 	Frequency   int64  `toml:"frequency"`
-	LogLevel    string `toml:"log_level"`
+}
+
+type Logging struct {
+	Level string `toml:"level"`
 }
 
 type Config struct {
 	Monitoring MonitoringConfig `toml:"monitoring"`
 	Labels     Labels           `toml:"labels"`
+	Logging    Logging          `toml:"logging"`
 
 	// NOTE: Computed fields
 	FrequencyDuration time.Duration
@@ -42,7 +46,7 @@ func Load(path string) (*Config, error) {
 	config.FrequencyDuration = time.Duration(config.
 		Labels.Frequency) * time.Second
 
-	switch config.Labels.LogLevel {
+	switch config.Logging.Level {
 	case "debug":
 		config.ParsedLogLevel = log.DebugLevel
 	case "info":

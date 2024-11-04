@@ -16,9 +16,9 @@ var (
 
 func NewLogger(cfg *config.Config) *log.Logger {
 	once.Do(func() {
-		instance = log.NewWithOptions(os.Stderr, log.Options{
+		instance = log.NewWithOptions(os.Stdout, log.Options{
 			Level:           cfg.ParsedLogLevel,
-			ReportCaller:    false,
+			ReportCaller:    true,
 			ReportTimestamp: true,
 			TimeFormat:      time.RFC3339,
 			Prefix:          cfg.Labels.Service,

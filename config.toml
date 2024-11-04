@@ -8,4 +8,7 @@ disk_paths = ["/", "/dev/disk0"]
 [labels]
 environment = "production"
 service = "beacon"
-log_level = "debug"
+
+[logging]
+level = "debug"
+file = "dev.log"

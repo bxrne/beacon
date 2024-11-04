@@ -1,4 +1,4 @@
-package config
+package config_test
 
 import (
 	"os"
@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bxrne/beacon/pkg/config"
 	"github.com/charmbracelet/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -15,7 +16,7 @@ func TestLoad(t *testing.T) {
 	tests := []struct {
 		name           string
 		configContent  string
-		expectedConfig *Config
+		expectedConfig *config.Config
 		expectedError  string
 	}{
 		{ // TEST: GIVEN a valid (full) config file WHEN Load is called THEN no error is returned AND the config is loaded correctly
@@ -26,25 +27,31 @@ enable_cpu = true
 enable_memory = true
 enable_disk = true
 disk_paths = ["/path1", "/path2"]
+frequency = 60
 
 [labels]
 environment = "production"
 service = "test-service"
 frequency = 60
-log_level = "debug"
+
+[logging]
+level = "debug"
+file = "app.log"
 `,
-			expectedConfig: &Config{
-				Monitoring: MonitoringConfig{
+			expectedConfig: &config.Config{
+				Monitoring: config.MonitoringConfig{
 					EnableCPU:    true,
 					EnableMemory: true,
 					EnableDisk:   true,
 					DiskPaths:    []string{"/path1", "/path2"},
 				},
-				Labels: Labels{
+				Labels: config.Labels{
 					Environment: "production",
 					Service:     "test-service",
 					Frequency:   60,
-					LogLevel:    "debug",
+				},
+				Logging: config.Logging{
+					Level: "debug",
 				},
 				FrequencyDuration: 60 * time.Second,
 				ParsedLogLevel:    log.DebugLevel,
@@ -57,25 +64,32 @@ log_level = "debug"
 enable_cpu = false
 enable_memory = false
 enable_disk = false
+frequency = 30
 
 [labels]
 environment = "dev"
 service = "minimal"
 frequency = 30
+
+[logging]
+level = "info"
 `,
-			expectedConfig: &Config{
-				Monitoring: MonitoringConfig{
+			expectedConfig: &config.Config{
+				Monitoring: config.MonitoringConfig{
 					EnableCPU:    false,
 					EnableMemory: false,
 					EnableDisk:   false,
 				},
-				Labels: Labels{
+				Labels: config.Labels{
 					Environment: "dev",
 					Service:     "minimal",
 					Frequency:   30,
 				},
+				Logging: config.Logging{
+					Level: "info",
+				},
 				FrequencyDuration: 30 * time.Second,
-				ParsedLogLevel:    log.InfoLevel, // default value
+				ParsedLogLevel:    log.InfoLevel, // Default log level if not explicitly set
 			},
 		},
 		{ // TEST: GIVEN a config file with all log levels WHEN Load is called THEN no error is returned AND the config is loaded correctly
@@ -83,22 +97,28 @@ frequency = 30
 			configContent: `
 [monitoring]
 enable_cpu = true
+frequency = 10
 
 [labels]
 environment = "test"
 service = "logger"
 frequency = 10
-log_level = "error"
+
+[logging]
+level = "error"
+file = "error.log"
 `,
-			expectedConfig: &Config{
-				Monitoring: MonitoringConfig{
+			expectedConfig: &config.Config{
+				Monitoring: config.MonitoringConfig{
 					EnableCPU: true,
 				},
-				Labels: Labels{
+				Labels: config.Labels{
 					Environment: "test",
 					Service:     "logger",
 					Frequency:   10,
-					LogLevel:    "error",
+				},
+				Logging: config.Logging{
+					Level: "error",
 				},
 				FrequencyDuration: 10 * time.Second,
 				ParsedLogLevel:    log.ErrorLevel,
@@ -121,7 +141,7 @@ enable_cpu = true
 			err := os.WriteFile(configPath, []byte(tt.configContent), 0644)
 			require.NoError(t, err, "Failed to write test config file")
 
-			config, err := Load(configPath)
+			config, err := config.Load(configPath)
 
 			if tt.expectedError != "" {
 				require.Error(t, err)
@@ -140,7 +160,8 @@ enable_cpu = true
 			assert.Equal(t, tt.expectedConfig.Labels.Environment, config.Labels.Environment)
 			assert.Equal(t, tt.expectedConfig.Labels.Service, config.Labels.Service)
 			assert.Equal(t, tt.expectedConfig.Labels.Frequency, config.Labels.Frequency)
-			assert.Equal(t, tt.expectedConfig.Labels.LogLevel, config.Labels.LogLevel)
+
+			assert.Equal(t, tt.expectedConfig.Logging.Level, config.Logging.Level)
 
 			assert.Equal(t, tt.expectedConfig.FrequencyDuration, config.FrequencyDuration)
 			assert.Equal(t, tt.expectedConfig.ParsedLogLevel, config.ParsedLogLevel)
@@ -149,7 +170,7 @@ enable_cpu = true
 }
 
 func TestLoadNonExistentFile(t *testing.T) {
-	_, err := Load("non_existent_file.toml")
+	_, err := config.Load("non_existent_file.toml")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to decode config file")
 }
