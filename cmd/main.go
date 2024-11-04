@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/bxrne/beacon/pkg/config"
 	"github.com/bxrne/beacon/pkg/logger"
@@ -23,5 +24,15 @@ func main() {
 		"environment", cfg.Labels.Environment,
 	)
 
-	stats.RunCollector(cfg, log)
+	for {
+		metrics, err := stats.Collect(cfg)
+		if err != nil {
+			fmt.Printf("Failed to collect metrics: %v\n", err)
+			continue
+		}
+
+		log.Debug(metrics.String())
+
+		time.Sleep(cfg.FrequencyDuration)
+	}
 }

@@ -5,27 +5,12 @@ import (
 	"time"
 
 	"github.com/bxrne/beacon/pkg/config"
-	"github.com/charmbracelet/log"
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/shirou/gopsutil/v3/mem"
 )
 
-func RunCollector(cfg *config.Config, log *log.Logger) {
-	for {
-		metrics, err := collectMetrics(cfg)
-		if err != nil {
-			fmt.Printf("Failed to collect metrics: %v\n", err)
-			continue
-		}
-
-		log.Debug(metrics.String())
-
-		time.Sleep(cfg.FrequencyDuration)
-	}
-}
-
-func collectMetrics(cfg *config.Config) (DeviceMetrics, error) {
+func Collect(cfg *config.Config) (DeviceMetrics, error) {
 	metrics := DeviceMetrics{
 		DiskUsage: make(map[string]float64),
 	}
