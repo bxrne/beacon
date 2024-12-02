@@ -23,6 +23,10 @@
 #define GPIO_INTERRUPT_TRIGGER GPIO_INTR_NEGEDGE
 #define BUTTON_QUEUE_SIZE 5 // Size of button event queue
 
+#define W_SSID "coldspot"    // Ephemeral credentials for testing
+#define W_PASS "helloworld1" // Ephemeral credentials for testing
+#define W_MAX_RETRY 5
+
 typedef enum
 {
   EVENT_BUTTON_PRESS
