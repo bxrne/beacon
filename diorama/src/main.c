@@ -21,7 +21,7 @@
 #include "esp_wifi.h"
 #include "esp_log.h"
 #include "nvs_flash.h"
-
+QueueHandle_t event_queue;
 /* The event group allows multiple bits for each event, but we only care about two events:
  * - we are connected to the AP with an IP
  * - we failed to connect after the maximum amount of retries */
@@ -143,7 +143,13 @@ void app_main(void)
 
     gpio_set_pull_mode(PED_BUTTON_PIN, GPIO_PULLUP_ONLY);
     ESP_LOGI(TAG, "Button pin configured with pull-up resistor");
+    event_queue = xQueueCreate(10, sizeof(event_t));
 
+    if (event_queue == NULL)
+    {
+        ESP_LOGE(TAG, "Failed to create event queue");
+        return;
+    }
     if (xTaskCreate(traffic_light_task, "Traffic Light Task", 4096, NULL, 1, NULL) != pdPASS)
     {
         ESP_LOGE(TAG, "Failed to create Traffic Light Task");
