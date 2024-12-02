@@ -1,0 +1,107 @@
+definitions:
+  metrics.DeviceMetrics:
+    properties:
+      metrics:
+        items:
+          $ref: '#/definitions/metrics.Metric'
+        type: array
+    type: object
+  metrics.Metric:
+    properties:
+      type:
+        description: References metric_types.name
+        type: string
+      unit:
+        description: References units.name
+        type: string
+      value:
+        type: number
+    type: object
+info:
+  contact: {}
+paths:
+  /health:
+    get:
+      description: Get the health status of the server
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Health check
+      tags:
+      - health
+  /metric:
+    get:
+      description: Get metrics for a device
+      parameters:
+      - description: Device hostname
+        in: header
+        name: X-Hostname
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/metrics.DeviceMetrics'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get metrics
+      tags:
+      - metrics
+    post:
+      consumes:
+      - application/json
+      description: Submit metrics for a device
+      parameters:
+      - description: Device hostname
+        in: header
+        name: X-Hostname
+        required: true
+        type: string
+      - description: Metrics data
+        in: body
+        name: metrics
+        required: true
+        schema:
+          $ref: '#/definitions/metrics.DeviceMetrics'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/metrics.DeviceMetrics'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Submit metrics
+      tags:
+      - metrics
+swagger: "2.0"

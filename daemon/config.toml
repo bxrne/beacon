@@ -1,0 +1,15 @@
+[monitoring]
+frequency = 5
+disk_paths = ["/"]
+
+[labels]
+environment = "production"
+service = "beacon-daemon"
+
+[logging]
+level = "debug"
+
+[telemetry]
+server = "http://localhost:3000"
+ex_client_port = "/dev/tty.usbserial-14110"
+ex_client_baud = 115200
