@@ -15,6 +15,9 @@ import (
 	_ "github.com/bxrne/beacon/api/docs" // This line is necessary for go-swagger to find your docs
 )
 
+// @title Beacon API
+// @version 1.0
+// @description Collects device and metric data from clients
 func main() {
 	cfg, err := config.Load("config.toml")
 	if err != nil {

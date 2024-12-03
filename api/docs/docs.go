@@ -121,19 +121,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/server.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/server.errorResponse"
                         }
                     }
                 }
@@ -168,6 +162,14 @@ const docTemplate = `{
                 }
             }
         },
+        "server.errorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
         "server.healthResponse": {
             "type": "object",
             "properties": {
@@ -181,15 +183,14 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "",
+	Version:          "1.0",
 	Host:             "",
 	BasePath:         "",
 	Schemes:          []string{},
-	Title:            "",
-	Description:      "",
+	Title:            "Beacon API",
+	Description:      "Collects device and metric data from clients",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
-	
 }
 
 func init() {

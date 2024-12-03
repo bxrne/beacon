@@ -1,7 +1,10 @@
 {
     "swagger": "2.0",
     "info": {
-        "contact": {}
+        "description": "Collects device and metric data from clients",
+        "title": "Beacon API",
+        "contact": {},
+        "version": "1.0"
     },
     "paths": {
         "/health": {
@@ -110,19 +113,13 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/server.errorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/server.errorResponse"
                         }
                     }
                 }
@@ -154,6 +151,14 @@
                 },
                 "value": {
                     "type": "number"
+                }
+            }
+        },
+        "server.errorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
                 }
             }
         },

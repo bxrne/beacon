@@ -17,6 +17,11 @@ definitions:
       value:
         type: number
     type: object
+  server.errorResponse:
+    properties:
+      error:
+        type: string
+    type: object
   server.healthResponse:
     properties:
       status:
@@ -24,6 +29,9 @@ definitions:
     type: object
 info:
   contact: {}
+  description: Collects device and metric data from clients
+  title: Beacon API
+  version: "1.0"
 paths:
   /health:
     get:
@@ -95,15 +103,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/server.errorResponse'
         "500":
           description: Internal Server Error
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/server.errorResponse'
       summary: Submit metrics
       tags:
       - metrics
