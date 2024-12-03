@@ -25,11 +25,14 @@ func main() {
 		logger.Fatal("failed to load config", "error", err)
 	}
 
-	db, err := db.NewDatabase()
+	db, err := db.NewDatabase(cfg.Database.DSN)
 	if err != nil {
 		logger.Fatal("failed to connect to database", "error", err)
 	}
-	defer db.Close()
+	defer func() {
+		sqlDB, _ := db.DB()
+		sqlDB.Close()
+	}()
 
 	srv := server.New(cfg, logger, db)
 

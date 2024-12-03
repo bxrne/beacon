@@ -29,10 +29,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/server.healthResponse"
                         }
                     }
                 }
@@ -51,8 +48,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Device hostname",
-                        "name": "X-Hostname",
+                        "description": "Device ID",
+                        "name": "X-DeviceID",
                         "in": "header",
                         "required": true
                     }
@@ -99,8 +96,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Device hostname",
-                        "name": "X-Hostname",
+                        "description": "Device ID",
+                        "name": "X-DeviceID",
                         "in": "header",
                         "required": true
                     },
@@ -170,6 +167,14 @@ const docTemplate = `{
                     "type": "number"
                 }
             }
+        },
+        "server.healthResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string"
+                }
+            }
         }
     }
 }`
@@ -184,6 +189,7 @@ var SwaggerInfo = &swag.Spec{
 	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
+	
 }
 
 func init() {

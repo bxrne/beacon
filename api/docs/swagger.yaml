@@ -17,6 +17,11 @@ definitions:
       value:
         type: number
     type: object
+  server.healthResponse:
+    properties:
+      status:
+        type: string
+    type: object
 info:
   contact: {}
 paths:
@@ -29,9 +34,7 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/server.healthResponse'
       summary: Health check
       tags:
       - health
@@ -39,9 +42,9 @@ paths:
     get:
       description: Get metrics for a device
       parameters:
-      - description: Device hostname
+      - description: Device ID
         in: header
-        name: X-Hostname
+        name: X-DeviceID
         required: true
         type: string
       produces:
@@ -71,9 +74,9 @@ paths:
       - application/json
       description: Submit metrics for a device
       parameters:
-      - description: Device hostname
+      - description: Device ID
         in: header
-        name: X-Hostname
+        name: X-DeviceID
         required: true
         type: string
       - description: Metrics data

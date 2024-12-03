@@ -10,3 +10,6 @@ port = 3000
 shutdown_timeout = 10
 allowed_origins = ["*"]
 cache_ttl = 60
+
+[database]
+dsn = "test.db"

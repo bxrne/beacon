@@ -22,18 +22,21 @@ type Server struct {
 	CacheTTL        int      `toml:"cache_ttl"`
 }
 
+type Database struct {
+	DSN string `toml:"dsn"`
+}
+
 type Config struct {
-	Labels  Labels  `toml:"labels"`
-	Logging Logging `toml:"logging"`
-	Server  Server  `toml:"server"`
+	Labels   Labels   `toml:"labels"`
+	Logging  Logging  `toml:"logging"`
+	Server   Server   `toml:"server"`
+	Database Database `toml:"database"`
 }
 
 func Load(path string) (*Config, error) {
-	config := &Config{}
-
-	if _, err := toml.DecodeFile(path, config); err != nil {
-		return nil, fmt.Errorf("failed to decode config file: %w", err)
+	var cfg Config
+	if _, err := toml.DecodeFile(path, &cfg); err != nil {
+		return nil, fmt.Errorf("failed to load config: %w", err)
 	}
-
-	return config, nil
+	return &cfg, nil
 }
