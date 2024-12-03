@@ -26,13 +26,19 @@ func migrate(db *gorm.DB, cfg *config.Config) error {
 		return err
 	}
 
-	units := []Unit{{Name: "percent"}, {Name: "bytes"}, {Name: "seconds"}}
+	var units []Unit
+	for _, unit := range cfg.Metrics.Units {
+		units = append(units, Unit{Name: unit})
+	}
 	for _, unit := range units {
 		db.FirstOrCreate(&unit, Unit{Name: unit.Name})
 	}
 
-	metricTypes := []MetricType{{Name: "cpu_usage"}, {Name: "disk_usage"}, {Name: "uptime"}}
-	for _, metricType := range metricTypes {
+	var types []MetricType
+	for _, metricType := range cfg.Metrics.Types {
+		types = append(types, MetricType{Name: metricType})
+	}
+	for _, metricType := range types {
 		db.FirstOrCreate(&metricType, MetricType{Name: metricType.Name})
 	}
 
