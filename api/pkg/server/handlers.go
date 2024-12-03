@@ -3,11 +3,14 @@ package server
 import (
 	"encoding/json"
 	"net/http"
-	"time"
 
-	"github.com/bxrne/beacon-web/pkg/db"
-	"github.com/bxrne/beacon-web/pkg/metrics"
+	"github.com/bxrne/beacon/api/pkg/db"
+	"github.com/bxrne/beacon/api/pkg/metrics"
 )
+
+type errorResponse struct {
+	Error string `json:"error"`
+}
 
 // handleMetric godoc
 // @Summary      Submit metrics
@@ -15,44 +18,48 @@ import (
 // @Tags         metrics
 // @Accept       json
 // @Produce      json
-// @Param        X-Hostname  header    string          true  "Device hostname"
+// @Param        X-DeviceID  header    string          true  "Device ID"
 // @Param        metrics     body      metrics.DeviceMetrics  true  "Metrics data"
 // @Success      200         {object}  metrics.DeviceMetrics
-// @Failure      400         {object}  map[string]string
-// @Failure      500         {object}  map[string]string
+// @Failure      400         {object}  errorResponse
+// @Failure      500         {object}  errorResponse
 // @Router       /metric [post]
 func (s *Server) handleMetric(w http.ResponseWriter, r *http.Request) {
-	hostname := r.Header.Get("X-Hostname")
-	if hostname == "" {
-		s.logger.Errorf("missing hostname")
-		s.respondError(w, http.StatusBadRequest, "missing hostname")
+	deviceID := r.Header.Get("X-DeviceID")
+	if deviceID == "" {
+		res := errorResponse{Error: "missing device ID"}
+		s.logger.Errorf(res.Error)
+		s.respondJSON(w, http.StatusBadRequest, res)
 		return
 	}
 
 	// Register the device if it doesn't exist
-	if err := db.RegisterDevice(s.db, hostname); err != nil {
-		s.logger.Errorf("failed to register device: %v", err)
-		s.respondError(w, http.StatusInternalServerError, "failed to register device")
+	if err := db.RegisterDevice(s.db, deviceID); err != nil {
+		res := errorResponse{Error: "failed to register device"}
+		s.logger.Errorf(res.Error)
+		s.respondJSON(w, http.StatusInternalServerError, res)
 		return
 	}
 
 	var deviceMetrics metrics.DeviceMetrics
 	if err := json.NewDecoder(r.Body).Decode(&deviceMetrics); err != nil {
-		s.logger.Errorf("failed to decode request payload: %v", err)
-		s.respondError(w, http.StatusBadRequest, "invalid request payload")
+		res := errorResponse{Error: "failed to decode request body"}
+		s.logger.Errorf(res.Error)
+		s.respondJSON(w, http.StatusBadRequest, res)
 		return
 	}
 
 	if err := deviceMetrics.Validate(s.db); err != nil {
-		s.logger.Errorf("invalid metrics: %v", err)
-		s.respondError(w, http.StatusBadRequest, err.Error())
+		res := errorResponse{Error: "invalid metrics: " + err.Error()}
+		s.logger.Errorf(res.Error)
+		s.respondJSON(w, http.StatusBadRequest, res)
 		return
 	}
 
-	s.metricsCache.SetMetrics(hostname, deviceMetrics)
-	if err := db.PersistMetric(s.db, deviceMetrics, hostname); err != nil {
-		s.logger.Errorf("failed to persist metrics: %v", err)
-		s.respondError(w, http.StatusInternalServerError, "failed to persist metrics")
+	if err := metrics.PersistMetric(s.db, deviceMetrics, deviceID); err != nil {
+		res := errorResponse{Error: "failed to persist metrics"}
+		s.logger.Errorf(res.Error)
+		s.respondJSON(w, http.StatusBadRequest, res)
 		return
 	}
 
@@ -64,26 +71,43 @@ func (s *Server) handleMetric(w http.ResponseWriter, r *http.Request) {
 // @Description  Get metrics for a device
 // @Tags         metrics
 // @Produce      json
-// @Param        X-Hostname  header    string  true  "Device hostname"
+// @Param        X-DeviceID  header    string  true  "Device ID"
 // @Success      200         {object}  metrics.DeviceMetrics
 // @Failure      400         {object}  map[string]string
 // @Failure      404         {object}  map[string]string
 // @Router       /metric [get]
 func (s *Server) handleGetMetric(w http.ResponseWriter, r *http.Request) {
-	hostname := r.Header.Get("X-Hostname")
-	if hostname == "" {
-		s.logger.Errorf("missing hostname")
-		s.respondError(w, http.StatusBadRequest, "missing hostname")
+	deviceID := r.Header.Get("X-DeviceID")
+	if deviceID == "" {
+		res := errorResponse{Error: "missing device ID"}
+		s.logger.Errorf(res.Error)
+		s.respondJSON(w, http.StatusBadRequest, res)
 		return
 	}
 
-	deviceMetrics, exists := s.metricsCache.GetMetrics(hostname)
-	if !exists {
-		s.respondError(w, http.StatusNotFound, "no metrics found for device")
+	var device db.Device
+	if err := s.db.First(&device, "name = ?", deviceID).Error; err != nil {
+		res := errorResponse{Error: "device not found"}
+		s.logger.Errorf(res.Error)
+		s.respondJSON(w, http.StatusNotFound, res)
 		return
 	}
 
+	var metrics []db.Metric
+	if err := s.db.Where("device_id = ?", device.ID).Find(&metrics).Error; err != nil {
+		res := errorResponse{Error: "failed to get metrics"}
+		s.logger.Errorf(res.Error)
+		s.respondJSON(w, http.StatusBadRequest, res)
+		return
+	}
+
+	var deviceMetrics []db.Metric
+	deviceMetrics = append(deviceMetrics, metrics...)
 	s.respondJSON(w, http.StatusOK, deviceMetrics)
+}
+
+type healthResponse struct {
+	Status string `json:"status"`
 }
 
 // handleHealth godoc
@@ -91,13 +115,8 @@ func (s *Server) handleGetMetric(w http.ResponseWriter, r *http.Request) {
 // @Description  Get the health status of the server
 // @Tags         health
 // @Produce      json
-// @Success      200  {object}  map[string]string
+// @Success      200  {object}  healthResponse
 // @Router       /health [get]
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
-	response := map[string]string{
-		"status": "OK",
-		"time":   time.Now().Format(time.RFC3339),
-	}
-
-	s.respondJSON(w, http.StatusOK, response)
+	s.respondJSON(w, http.StatusOK, healthResponse{Status: "ok"})
 }

@@ -2,17 +2,17 @@ package server
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
 
-	_ "github.com/bxrne/beacon-web/docs" // This line is necessary for go-swagger to find your docs
-	"github.com/bxrne/beacon-web/pkg/config"
-	"github.com/bxrne/beacon-web/pkg/metrics"
+	"gorm.io/gorm"
+
+	_ "github.com/bxrne/beacon/api/docs" // This line is necessary for go-swagger to find your docs
+	"github.com/bxrne/beacon/api/pkg/config"
+	"github.com/bxrne/beacon/api/pkg/metrics"
 	"github.com/charmbracelet/log"
-	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
@@ -22,11 +22,11 @@ type Server struct {
 	srv          *http.Server
 	logger       *log.Logger
 	cfg          *config.Config
-	db           *sql.DB
+	db           *gorm.DB
 	metricsCache *metrics.MetricsCache
 }
 
-func New(cfg *config.Config, logger *log.Logger, db *sql.DB) *Server {
+func New(cfg *config.Config, logger *log.Logger, db *gorm.DB) *Server {
 	s := &Server{
 		router:       mux.NewRouter(),
 		logger:       logger,
@@ -37,25 +37,6 @@ func New(cfg *config.Config, logger *log.Logger, db *sql.DB) *Server {
 
 	s.setupRoutes()
 	return s
-}
-
-func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-
-		lrw := newLoggingResponseWriter(w)
-
-		next.ServeHTTP(lrw, r)
-
-		s.logger.Info("request completed",
-			"method", r.Method,
-			"path", r.URL.Path,
-			"status", lrw.statusCode,
-			"duration_ns", time.Since(start).Nanoseconds(),
-			"remote_addr", r.RemoteAddr,
-			"hostname", r.Header.Get("X-Hostname"),
-		)
-	})
 }
 
 func (s *Server) respondJSON(w http.ResponseWriter, status int, data interface{}) {
@@ -71,38 +52,58 @@ func (s *Server) respondError(w http.ResponseWriter, code int, message string) {
 }
 
 func (s *Server) Start(ctx context.Context) error {
-	cors := handlers.CORS(
-		handlers.AllowedOrigins(s.cfg.Server.AllowedOrigins),
-		handlers.AllowedMethods([]string{"GET", "POST"}),
-		handlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
-	)
-
 	s.srv = &http.Server{
-		Addr:    fmt.Sprintf(":%d", s.cfg.Server.Port),
-		Handler: cors(s.router),
+		Addr:         fmt.Sprintf(":%d", s.cfg.Server.Port),
+		Handler:      s.router,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		IdleTimeout:  60 * time.Second,
 	}
 
 	go func() {
-		s.logger.Info("starting server", "port", s.cfg.Server.Port)
-		if err := s.srv.ListenAndServe(); err != http.ErrServerClosed {
-			s.logger.Error("server error", "error", err)
+		if err := s.srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			s.logger.Fatalf("listen: %s\n", err)
 		}
 	}()
 
+	s.logger.Infof("Server started on port %d", s.cfg.Server.Port)
+	<-ctx.Done()
+
+	s.logger.Info("Server stopping")
+
+	ctxShutDown, cancel := context.WithTimeout(context.Background(), time.Duration(s.cfg.Server.ShutdownTimeout)*time.Second)
+	defer cancel()
+
+	if err := s.srv.Shutdown(ctxShutDown); err != nil {
+		s.logger.Fatalf("server shutdown failed: %s", err)
+	}
+
+	s.logger.Info("Server exited properly")
 	return nil
 }
 
 func (s *Server) Stop(ctx context.Context) error {
-	s.logger.Info("stopping server")
+	return s.srv.Shutdown(ctx)
+}
 
-	shutdownCtx, cancel := context.WithTimeout(ctx, time.Duration(s.cfg.Server.ShutdownTimeout)*time.Second)
-	defer cancel()
+type statusRecorder struct {
+	http.ResponseWriter
+	status int
+}
 
-	if err := s.srv.Shutdown(shutdownCtx); err != nil {
-		return fmt.Errorf("server shutdown failed: %w", err)
-	}
+func (rec *statusRecorder) WriteHeader(code int) {
+	rec.status = code
+	rec.ResponseWriter.WriteHeader(code)
+}
 
-	return nil
+func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
+		next.ServeHTTP(rec, r)
+		duration := time.Since(start).Nanoseconds()
+		s.logger.Infof("Method=%s Path=%s Status=%d DurationNS=%d Source=%s", r.Method, r.URL.Path, rec.status, duration, r.RemoteAddr)
+	})
 }
 
 func (s *Server) setupRoutes() {

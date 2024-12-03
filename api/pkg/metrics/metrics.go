@@ -1,9 +1,10 @@
-// pkg/metrics/metrics.go
 package metrics
 
 import (
-	"database/sql"
 	"fmt"
+
+	models "github.com/bxrne/beacon/api/pkg/db"
+	"gorm.io/gorm"
 )
 
 // These should match values in metric_types table
@@ -18,9 +19,9 @@ type DeviceMetrics struct {
 }
 
 // ValidateMetricType checks if the metric type exists in DB
-func ValidateMetricType(db *sql.DB, metricType string) error {
+func ValidateMetricType(gorm_db *gorm.DB, metricType string) error {
 	var exists bool
-	err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM metric_types WHERE name = $1)", metricType).Scan(&exists)
+	err := gorm_db.Model(&models.MetricType{}).Select("count(*) > 0").Where("name = ?", metricType).Find(&exists).Error
 	if err != nil {
 		return fmt.Errorf("failed to check metric type: %w", err)
 	}
@@ -31,9 +32,9 @@ func ValidateMetricType(db *sql.DB, metricType string) error {
 }
 
 // ValidateUnit checks if the unit exists in DB
-func ValidateUnit(db *sql.DB, unit string) error {
+func ValidateUnit(gorm_db *gorm.DB, unit string) error {
 	var exists bool
-	err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM units WHERE name = $1)", unit).Scan(&exists)
+	err := gorm_db.Model(&models.Unit{}).Select("count(*) > 0").Where("name = ?", unit).Find(&exists).Error
 	if err != nil {
 		return fmt.Errorf("failed to check unit: %w", err)
 	}
@@ -44,7 +45,7 @@ func ValidateUnit(db *sql.DB, unit string) error {
 }
 
 // Validate checks if metric values exist in DB
-func (m Metric) Validate(db *sql.DB) error {
+func (m Metric) Validate(db *gorm.DB) error {
 	if err := ValidateMetricType(db, m.Type); err != nil {
 		return err
 	}
@@ -52,11 +53,47 @@ func (m Metric) Validate(db *sql.DB) error {
 }
 
 // Validate checks all metrics against DB values
-func (dm DeviceMetrics) Validate(db *sql.DB) error {
+func (dm DeviceMetrics) Validate(db *gorm.DB) error {
 	for _, m := range dm.Metrics {
 		if err := m.Validate(db); err != nil {
 			return err
 		}
 	}
+	return nil
+}
+
+// PersistMetric persists the metrics for a device
+func PersistMetric(db *gorm.DB, deviceMetrics DeviceMetrics, name string) error {
+	if name == "" {
+		return fmt.Errorf("name is empty")
+	}
+
+	var device models.Device
+	if err := db.First(&device, "name = ?", name).Error; err != nil {
+		return fmt.Errorf("device not found")
+	}
+
+	for _, metric := range deviceMetrics.Metrics {
+		var metricType models.MetricType
+		if err := db.First(&metricType, "name = ?", metric.Type).Error; err != nil {
+			return err
+		}
+
+		var unit models.Unit
+		if err := db.First(&unit, "name = ?", metric.Unit).Error; err != nil {
+			return err
+		}
+
+		newMetric := models.Metric{
+			TypeID:   metricType.ID,
+			Value:    metric.Value,
+			UnitID:   unit.ID,
+			DeviceID: device.ID,
+		}
+		if err := db.Create(&newMetric).Error; err != nil {
+			return err
+		}
+	}
+
 	return nil
 }

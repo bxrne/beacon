@@ -2,34 +2,42 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"github.com/bxrne/beacon-web/pkg/config"
-	"github.com/bxrne/beacon-web/pkg/db"
-	"github.com/bxrne/beacon-web/pkg/server"
+	"github.com/bxrne/beacon/api/pkg/config"
+	"github.com/bxrne/beacon/api/pkg/db"
+	"github.com/bxrne/beacon/api/pkg/logger"
+	"github.com/bxrne/beacon/api/pkg/server"
 
-	_ "github.com/bxrne/beacon-web/docs" // This line is necessary for go-swagger to find your docs
-	"github.com/charmbracelet/log"
+	_ "github.com/bxrne/beacon/api/docs" // This line is necessary for go-swagger to find your docs
 )
 
+// @title Beacon API
+// @version 1.0
+// @description Collects device and metric data from clients
 func main() {
-	logger := log.NewWithOptions(os.Stderr, log.Options{
-		ReportCaller:    true,
-		ReportTimestamp: true,
-	})
-
 	cfg, err := config.Load("config.toml")
 	if err != nil {
-		logger.Fatal("failed to load config", "error", err)
+		fmt.Printf("failed to load config: %v\n", err)
+		os.Exit(1)
 	}
 
-	db, err := db.NewDatabase()
+	logger := logger.NewLogger(cfg)
+	logger.Infof("Starting Service=%s Environment=%s", cfg.Labels.Service, cfg.Labels.Environment)
+
+	db, err := db.NewDatabase(cfg)
 	if err != nil {
 		logger.Fatal("failed to connect to database", "error", err)
 	}
-	defer db.Close()
+	logger.Info("Connected to database")
+
+	defer func() {
+		sqlDB, _ := db.DB()
+		sqlDB.Close()
+	}()
 
 	srv := server.New(cfg, logger, db)
 

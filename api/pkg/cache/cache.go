@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bxrne/beacon-web/pkg/config"
+	"github.com/bxrne/beacon/api/pkg/config"
 )
 
 type CacheItem struct {

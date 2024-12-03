@@ -15,6 +15,8 @@ Monitoring and analysing multiple device metrics from a cloud dashboard.
 
 ```sh
 cd daemon
+go mod download
+
 go run ./cmd
 
 go test ./...
@@ -24,6 +26,9 @@ go test ./...
 
 ```sh
 cd api
+swag init -g ./cmd/main.go # Generate swagger docs 
+go mod download
+
 go run ./cmd
 
 go test ./...

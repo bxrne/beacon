@@ -3,8 +3,8 @@ package logger_test
 import (
 	"testing"
 
-	"github.com/bxrne/beacon-web/pkg/config"
-	"github.com/bxrne/beacon-web/pkg/logger"
+	"github.com/bxrne/beacon/api/pkg/config"
+	"github.com/bxrne/beacon/api/pkg/logger"
 	"github.com/charmbracelet/log"
 	"github.com/stretchr/testify/assert"
 )
