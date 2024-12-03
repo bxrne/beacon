@@ -21,6 +21,6 @@ types = [
   "uptime",
   "car_light",
   "pedestrian_light",
-  "pedestrian_waiting",
+  "pedestrian_button",
 ]
 units = ["percent", "bytes", "seconds", "quality"]

@@ -27,6 +27,8 @@
 #define W_PASS "helloworld1" // Ephemeral credentials for testing
 #define W_MAX_RETRY 5
 
+#define TELEMTRY_URL "localhost:3000/metric"
+
 typedef enum
 {
   EVENT_BUTTON_PRESS

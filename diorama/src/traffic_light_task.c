@@ -26,7 +26,7 @@ void log_telemetry(traffic_state_t state, bool pedestrian_waiting)
   const char *ped_light = (state == STATE_PED_GREEN) ? "GREEN" : "RED";
   snprintf(telemetry, sizeof(telemetry), "{\"car_light\":\"%s\",\"pedestrian_light\":\"%s\",\"pedestrian_waiting\":%s}",
            car_light, ped_light, pedestrian_waiting ? "true" : "false");
-  ESP_LOGI(TAG, "[TELEMETRY] %s", telemetry);
+  ESP_LOGI("TELEMETRY", "%s", telemetry);
 }
 
 void traffic_light_task(void *pvParameters)
@@ -42,7 +42,7 @@ void traffic_light_task(void *pvParameters)
   gpio_set_level(PED_GREEN_PIN, 0);
   gpio_set_level(PED_RED_PIN, 1);
 
-  ESP_LOGI(TAG, "[DEBUG] Initial traffic light state set");
+  ESP_LOGI("TRAFFIC_LIGHT_TASK", "Initial traffic light state set");
 
   while (1)
   {
@@ -52,7 +52,7 @@ void traffic_light_task(void *pvParameters)
     {
       if (event == EVENT_BUTTON_PRESS)
       {
-        ESP_LOGI(TAG, "[EVENT] Pedestrian button pressed");
+        ESP_LOGI("EVENT", "Pedestrian button pressed");
         pedestrian_waiting = true;
       }
     }
@@ -70,7 +70,7 @@ void traffic_light_task(void *pvParameters)
         // Transition to yellow if pedestrian is waiting
         vTaskDelay(pdMS_TO_TICKS(500)); // Brief delay before transition
         current_state = STATE_CAR_YELLOW;
-        ESP_LOGI(TAG, "[STATE] Transitioning to yellow due to pedestrian");
+        ESP_LOGI("STATE", "Transitioning to yellow due to pedestrian");
       }
       else
       {
@@ -82,7 +82,7 @@ void traffic_light_task(void *pvParameters)
     case STATE_CAR_YELLOW:
       gpio_set_level(CAR_GREEN_PIN, 0);
       gpio_set_level(CAR_YELLOW_PIN, 1);
-      ESP_LOGI(TAG, "[STATE] Car light: Yellow");
+      ESP_LOGI("STATE", "Car light: Yellow");
       log_telemetry(current_state, pedestrian_waiting);
       vTaskDelay(pdMS_TO_TICKS(CAR_YELLOW_DURATION));
       current_state = STATE_CAR_RED;
@@ -91,7 +91,7 @@ void traffic_light_task(void *pvParameters)
     case STATE_CAR_RED:
       gpio_set_level(CAR_YELLOW_PIN, 0);
       gpio_set_level(CAR_RED_PIN, 1);
-      ESP_LOGI(TAG, "[STATE] Car light: Red");
+      ESP_LOGI("STATE", "Car light: Red");
       log_telemetry(current_state, pedestrian_waiting);
 
       if (pedestrian_waiting)
@@ -108,14 +108,14 @@ void traffic_light_task(void *pvParameters)
     case STATE_PED_GREEN:
       gpio_set_level(PED_RED_PIN, 0);
       gpio_set_level(PED_GREEN_PIN, 1);
-      ESP_LOGI(TAG, "[STATE] Pedestrian light: Green");
+      ESP_LOGI("STATE", "Pedestrian light: Green");
       log_telemetry(current_state, pedestrian_waiting);
       vTaskDelay(pdMS_TO_TICKS(PED_GREEN_DURATION));
 
       // Transition back to red
       gpio_set_level(PED_GREEN_PIN, 0);
       gpio_set_level(PED_RED_PIN, 1);
-      ESP_LOGI(TAG, "[STATE] Pedestrian light: Red");
+      ESP_LOGI("STATE", "Pedestrian light: Red");
 
       pedestrian_waiting = false;
       current_state = STATE_CAR_GREEN;

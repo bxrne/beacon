@@ -1,4 +1,3 @@
-
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
@@ -42,18 +41,18 @@ static void event_handler(void *arg, esp_event_base_t event_base, int32_t event_
         {
             esp_wifi_connect();
             retry_num++;
-            ESP_LOGI(TAG, "Retrying to connect to the AP");
+            ESP_LOGI("WIFI_EVENT", "Retrying to connect to the AP");
         }
         else
         {
             xEventGroupSetBits(s_wifi_event_group, WIFI_FAIL_BIT);
         }
-        ESP_LOGI(TAG, "connect to the AP fail");
+        ESP_LOGI("WIFI_EVENT", "connect to the AP fail");
     }
     else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP)
     {
         ip_event_got_ip_t *event = (ip_event_got_ip_t *)event_data;
-        ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
+        ESP_LOGI("WIFI_EVENT", "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
         retry_num = 0;
         xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
     }
@@ -86,7 +85,7 @@ void wifi_init_sta(void)
     esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config);
     esp_wifi_start();
 
-    ESP_LOGI(TAG, "wifi_init_sta finished.");
+    ESP_LOGI("WIFI_INIT", "wifi_init_sta finished.");
 
     /* Waiting until either the connection is established (WIFI_CONNECTED_BIT) or connection failed for the maximum number of re-tries (WIFI_FAIL_BIT). The bits are set by event_handler() (see above) */
     EventBits_t bits = xEventGroupWaitBits(s_wifi_event_group,
@@ -98,15 +97,15 @@ void wifi_init_sta(void)
     /* xEventGroupWaitBits() returns the bits before the call returned, hence we can test which event actually happened. */
     if (bits & WIFI_CONNECTED_BIT)
     {
-        ESP_LOGI(TAG, "connected to ap SSID:%s", W_SSID);
+        ESP_LOGI("WIFI_INIT", "connected to ap SSID:%s", W_SSID);
     }
     else if (bits & WIFI_FAIL_BIT)
     {
-        ESP_LOGI(TAG, "Failed to connect to SSID:%s", W_SSID);
+        ESP_LOGI("WIFI_INIT", "Failed to connect to SSID:%s", W_SSID);
     }
     else
     {
-        ESP_LOGE(TAG, "UNEXPECTED EVENT");
+        ESP_LOGE("WIFI_INIT", "UNEXPECTED EVENT");
     }
 
     /* The event will not be processed after unregister */
@@ -125,7 +124,7 @@ void app_main(void)
     }
     ESP_ERROR_CHECK(ret);
 
-    ESP_LOGI(TAG, "ESP_WIFI_MODE_STA");
+    ESP_LOGI("APP_MAIN", "ESP_WIFI_MODE_STA");
     wifi_init_sta();
     esp_rom_gpio_pad_select_gpio(CAR_GREEN_PIN);
     esp_rom_gpio_pad_select_gpio(CAR_YELLOW_PIN);
@@ -142,22 +141,22 @@ void app_main(void)
     gpio_set_direction(PED_BUTTON_PIN, GPIO_MODE_INPUT);
 
     gpio_set_pull_mode(PED_BUTTON_PIN, GPIO_PULLUP_ONLY);
-    ESP_LOGI(TAG, "Button pin configured with pull-up resistor");
+    ESP_LOGI("APP_MAIN", "Button pin configured with pull-up resistor");
     event_queue = xQueueCreate(10, sizeof(event_t));
 
     if (event_queue == NULL)
     {
-        ESP_LOGE(TAG, "Failed to create event queue");
+        ESP_LOGE("APP_MAIN", "Failed to create event queue");
         return;
     }
     if (xTaskCreate(traffic_light_task, "Traffic Light Task", 4096, NULL, 1, NULL) != pdPASS)
     {
-        ESP_LOGE(TAG, "Failed to create Traffic Light Task");
+        ESP_LOGE("APP_MAIN", "Failed to create Traffic Light Task");
     }
 
     if (xTaskCreate(button_task, "Button Task", 2048, NULL, 1, NULL) != pdPASS)
     {
-        ESP_LOGE(TAG, "Failed to create Button Task");
+        ESP_LOGE("APP_MAIN", "Failed to create Button Task");
     }
 
     // Initial traffic light state
@@ -166,5 +165,5 @@ void app_main(void)
     gpio_set_level(CAR_RED_PIN, 0);
     gpio_set_level(PED_GREEN_PIN, 0);
     gpio_set_level(PED_RED_PIN, 1);
-    ESP_LOGI(TAG, "Initial traffic light state set");
+    ESP_LOGI("APP_MAIN", "Initial traffic light state set");
 }

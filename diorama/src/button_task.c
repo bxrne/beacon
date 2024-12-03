@@ -20,18 +20,18 @@ void log_button_event()
 {
   char telemetry[64];
   snprintf(telemetry, sizeof(telemetry), "{\"event\":\"BUTTON_PRESS\"}");
-  ESP_LOGI(TAG, "[TELEMETRY] %s", telemetry);
+  ESP_LOGI("TELEMETRY", "%s", telemetry);
 }
 
 void button_task(void *pvParameters)
 {
-  ESP_LOGI(TAG, "[DEBUG] Button task started");
+  ESP_LOGI("BUTTON_TASK", "Button task started");
 
   // Create queue for button events
   button_evt_queue = xQueueCreate(BUTTON_QUEUE_SIZE, sizeof(uint32_t));
   if (button_evt_queue == NULL)
   {
-    ESP_LOGE(TAG, "[ERROR] Failed to create button queue");
+    ESP_LOGE("BUTTON_TASK", "Failed to create button queue");
     vTaskDelete(NULL);
     return;
   }
@@ -70,11 +70,11 @@ void button_task(void *pvParameters)
           button_state = BUTTON_PRESSED;
           last_press_time = current_time;
 
-          ESP_LOGI(TAG, "[EVENT] Valid button press detected");
+          ESP_LOGI("EVENT", "Valid button press detected");
           event_t event = EVENT_BUTTON_PRESS;
           if (xQueueSend(event_queue, &event, 0) != pdTRUE)
           {
-            ESP_LOGE(TAG, "[ERROR] Failed to send button event");
+            ESP_LOGE("EVENT", "Failed to send button event");
           }
           log_button_event();
         }
