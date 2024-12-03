@@ -4,9 +4,13 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/bxrne/beacon-web/pkg/db"
-	"github.com/bxrne/beacon-web/pkg/metrics"
+	"github.com/bxrne/beacon/api/pkg/db"
+	"github.com/bxrne/beacon/api/pkg/metrics"
 )
+
+type errorResponse struct {
+	Error string `json:"error"`
+}
 
 // handleMetric godoc
 // @Summary      Submit metrics
@@ -17,40 +21,45 @@ import (
 // @Param        X-DeviceID  header    string          true  "Device ID"
 // @Param        metrics     body      metrics.DeviceMetrics  true  "Metrics data"
 // @Success      200         {object}  metrics.DeviceMetrics
-// @Failure      400         {object}  map[string]string
-// @Failure      500         {object}  map[string]string
+// @Failure      400         {object}  errorResponse
+// @Failure      500         {object}  errorResponse
 // @Router       /metric [post]
 func (s *Server) handleMetric(w http.ResponseWriter, r *http.Request) {
 	deviceID := r.Header.Get("X-DeviceID")
 	if deviceID == "" {
-		s.logger.Errorf("missing device ID")
-		s.respondError(w, http.StatusBadRequest, "missing device ID")
+		res := errorResponse{Error: "missing device ID"}
+		s.logger.Errorf(res.Error)
+		s.respondJSON(w, http.StatusBadRequest, res)
 		return
 	}
 
 	// Register the device if it doesn't exist
 	if err := db.RegisterDevice(s.db, deviceID); err != nil {
-		s.logger.Errorf("failed to register device: %v", err)
-		s.respondError(w, http.StatusInternalServerError, "failed to register device")
+		res := errorResponse{Error: "failed to register device"}
+		s.logger.Errorf(res.Error)
+		s.respondJSON(w, http.StatusInternalServerError, res)
 		return
 	}
 
 	var deviceMetrics metrics.DeviceMetrics
 	if err := json.NewDecoder(r.Body).Decode(&deviceMetrics); err != nil {
-		s.logger.Errorf("failed to decode request payload: %v", err)
-		s.respondError(w, http.StatusBadRequest, "invalid request payload")
+		res := errorResponse{Error: "failed to decode request body"}
+		s.logger.Errorf(res.Error)
+		s.respondJSON(w, http.StatusBadRequest, res)
 		return
 	}
 
 	if err := deviceMetrics.Validate(s.db); err != nil {
-		s.logger.Errorf("invalid metrics: %v", err)
-		s.respondError(w, http.StatusBadRequest, err.Error())
+		res := errorResponse{Error: "invalid metrics: " + err.Error()}
+		s.logger.Errorf(res.Error)
+		s.respondJSON(w, http.StatusBadRequest, res)
 		return
 	}
 
-	if err := db.PersistMetric(s.db, deviceMetrics, deviceID); err != nil {
-		s.logger.Errorf("failed to persist metrics: %v", err)
-		s.respondError(w, http.StatusInternalServerError, "failed to persist metrics")
+	if err := metrics.PersistMetric(s.db, deviceMetrics, deviceID); err != nil {
+		res := errorResponse{Error: "failed to persist metrics"}
+		s.logger.Errorf(res.Error)
+		s.respondJSON(w, http.StatusBadRequest, res)
 		return
 	}
 
@@ -70,29 +79,30 @@ func (s *Server) handleMetric(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleGetMetric(w http.ResponseWriter, r *http.Request) {
 	deviceID := r.Header.Get("X-DeviceID")
 	if deviceID == "" {
-		s.logger.Errorf("missing device ID")
-		s.respondError(w, http.StatusBadRequest, "missing device ID")
+		res := errorResponse{Error: "missing device ID"}
+		s.logger.Errorf(res.Error)
+		s.respondJSON(w, http.StatusBadRequest, res)
 		return
 	}
 
 	var device db.Device
 	if err := s.db.First(&device, "name = ?", deviceID).Error; err != nil {
-		s.logger.Errorf("device not found: %v", err)
-		s.respondError(w, http.StatusNotFound, "device not found")
+		res := errorResponse{Error: "device not found"}
+		s.logger.Errorf(res.Error)
+		s.respondJSON(w, http.StatusNotFound, res)
 		return
 	}
 
 	var metrics []db.Metric
 	if err := s.db.Where("device_id = ?", device.ID).Find(&metrics).Error; err != nil {
-		s.logger.Errorf("failed to get metrics: %v", err)
-		s.respondError(w, http.StatusInternalServerError, "failed to get metrics")
+		res := errorResponse{Error: "failed to get metrics"}
+		s.logger.Errorf(res.Error)
+		s.respondJSON(w, http.StatusBadRequest, res)
 		return
 	}
 
 	var deviceMetrics []db.Metric
-	for _, m := range metrics {
-		deviceMetrics = append(deviceMetrics, m)
-	}
+	deviceMetrics = append(deviceMetrics, metrics...)
 	s.respondJSON(w, http.StatusOK, deviceMetrics)
 }
 

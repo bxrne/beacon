@@ -13,3 +13,7 @@ cache_ttl = 60
 
 [database]
 dsn = "test.db"
+
+[metrics]
+types = ["cpu_usage", "disk_usage", "uptime"]
+units = ["percent", "bytes", "seconds"]

@@ -9,9 +9,9 @@ import (
 
 	"gorm.io/gorm"
 
-	_ "github.com/bxrne/beacon-web/docs" // This line is necessary for go-swagger to find your docs
-	"github.com/bxrne/beacon-web/pkg/config"
-	"github.com/bxrne/beacon-web/pkg/metrics"
+	_ "github.com/bxrne/beacon/api/docs" // This line is necessary for go-swagger to find your docs
+	"github.com/bxrne/beacon/api/pkg/config"
+	"github.com/bxrne/beacon/api/pkg/metrics"
 	"github.com/charmbracelet/log"
 	"github.com/gorilla/mux"
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -86,7 +86,28 @@ func (s *Server) Stop(ctx context.Context) error {
 	return s.srv.Shutdown(ctx)
 }
 
+type statusRecorder struct {
+	http.ResponseWriter
+	status int
+}
+
+func (rec *statusRecorder) WriteHeader(code int) {
+	rec.status = code
+	rec.ResponseWriter.WriteHeader(code)
+}
+
+func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
+		next.ServeHTTP(rec, r)
+		duration := time.Since(start).Nanoseconds()
+		s.logger.Infof("Method=%s Path=%s Status=%d DurationNS=%d Source=%s", r.Method, r.URL.Path, rec.status, duration, r.RemoteAddr)
+	})
+}
+
 func (s *Server) setupRoutes() {
+	s.router.Use(s.loggingMiddleware)
 	s.router.HandleFunc("/health", s.handleHealth).Methods(http.MethodGet)
 	s.router.HandleFunc("/metric", s.handleMetric).Methods(http.MethodPost)
 	s.router.HandleFunc("/metric", s.handleGetMetric).Methods(http.MethodGet)

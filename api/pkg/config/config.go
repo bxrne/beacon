@@ -26,11 +26,17 @@ type Database struct {
 	DSN string `toml:"dsn"`
 }
 
+type Metrics struct {
+	Types []string `toml:"types"`
+	Units []string `toml:"units"`
+}
+
 type Config struct {
 	Labels   Labels   `toml:"labels"`
 	Logging  Logging  `toml:"logging"`
 	Server   Server   `toml:"server"`
 	Database Database `toml:"database"`
+	Metrics  Metrics  `toml:"metrics"`
 }
 
 func Load(path string) (*Config, error) {
