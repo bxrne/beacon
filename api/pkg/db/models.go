@@ -1,6 +1,10 @@
 package db
 
-import "gorm.io/gorm"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type Device struct {
 	gorm.Model
@@ -19,11 +23,12 @@ type MetricType struct {
 
 type Metric struct {
 	gorm.Model
-	TypeID   uint
-	Value    float64
-	UnitID   uint
-	DeviceID uint
-	Type     MetricType `gorm:"foreignKey:TypeID"`
-	Unit     Unit       `gorm:"foreignKey:UnitID"`
-	Device   Device     `gorm:"foreignKey:DeviceID"`
+	TypeID     uint
+	Value      float64
+	UnitID     uint
+	DeviceID   uint
+	Type       MetricType `gorm:"foreignKey:TypeID"`
+	Unit       Unit       `gorm:"foreignKey:UnitID"`
+	Device     Device     `gorm:"foreignKey:DeviceID"`
+	RecordedAt time.Time
 }

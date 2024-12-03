@@ -6,6 +6,7 @@ import (
 
 	"github.com/bxrne/beacon/api/pkg/db"
 	"github.com/bxrne/beacon/api/pkg/metrics"
+	"gorm.io/gorm"
 )
 
 type errorResponse struct {
@@ -87,9 +88,15 @@ func (s *Server) handleGetMetric(w http.ResponseWriter, r *http.Request) {
 
 	var device db.Device
 	if err := s.db.First(&device, "name = ?", deviceID).Error; err != nil {
-		res := errorResponse{Error: "device not found"}
-		s.logger.Errorf(res.Error)
-		s.respondJSON(w, http.StatusNotFound, res)
+		if err == gorm.ErrRecordNotFound {
+			res := errorResponse{Error: "device not found"}
+			s.logger.Errorf(res.Error)
+			s.respondJSON(w, http.StatusNotFound, res)
+		} else {
+			res := errorResponse{Error: "failed to query device"}
+			s.logger.Errorf(res.Error)
+			s.respondJSON(w, http.StatusInternalServerError, res)
+		}
 		return
 	}
 
@@ -97,7 +104,7 @@ func (s *Server) handleGetMetric(w http.ResponseWriter, r *http.Request) {
 	if err := s.db.Where("device_id = ?", device.ID).Find(&metrics).Error; err != nil {
 		res := errorResponse{Error: "failed to get metrics"}
 		s.logger.Errorf(res.Error)
-		s.respondJSON(w, http.StatusBadRequest, res)
+		s.respondJSON(w, http.StatusInternalServerError, res)
 		return
 	}
 

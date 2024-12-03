@@ -2,6 +2,7 @@ package db
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/bxrne/beacon/api/pkg/config"
 	"gorm.io/driver/sqlite"
@@ -9,7 +10,14 @@ import (
 )
 
 func NewDatabase(cfg *config.Config) (*gorm.DB, error) {
-	db, err := gorm.Open(sqlite.Open(cfg.Database.DSN), &gorm.Config{})
+	db_cfg := &gorm.Config{
+		NowFunc: func() time.Time {
+			return time.Now().UTC()
+		},
+	}
+
+	db, err := gorm.Open(sqlite.Open(cfg.Database.DSN), db_cfg)
+
 	if err != nil {
 		return nil, err
 	}
