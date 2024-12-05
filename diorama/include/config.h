@@ -1,8 +1,6 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#define TAG "TRAFFIC_LIGHT"
-
 #define CAR_GREEN_PIN 18
 #define CAR_GREEN_DURATION 5000 // 5 seconds
 #define CAR_YELLOW_PIN 19
@@ -27,11 +25,13 @@
 #define W_PASS "helloworld1" // Ephemeral credentials for testing
 #define W_MAX_RETRY 5
 
-#define TELEMTRY_URL "localhost:3000/metric"
+#define TELEMETRY_URL "localhost:3000/metric"
+#define TELEMETRY_TASK_FREQUENCY_MS 1000
 
 typedef enum
 {
-  EVENT_BUTTON_PRESS
+  EVENT_BUTTON_PRESS,
+  EVENT_STATE_CHANGE
 } event_t;
 
 typedef enum
