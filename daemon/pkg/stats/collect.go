@@ -68,8 +68,8 @@ func Collect(cfg *config.Config, host HostMonitor, memory MemoryMonitor, disk Di
 	}
 	metrics = append(metrics, Metric{
 		Type:       "cpu_usage",
-		Unit:       "bytes",
-		Value:      fmt.Sprintf("%d", memoryMetrics.Total),
+		Unit:       "percent",
+		Value:      fmt.Sprintf("%.2f", memoryMetrics.UsedPercent),
 		RecordedAt: currentTime,
 	})
 
@@ -80,8 +80,8 @@ func Collect(cfg *config.Config, host HostMonitor, memory MemoryMonitor, disk Di
 	}
 	metrics = append(metrics, Metric{
 		Type:       "disk_usage",
-		Unit:       "bytes",
-		Value:      fmt.Sprintf("%d", diskMetrics.Used),
+		Unit:       "percent",
+		Value:      fmt.Sprintf("%.2f", diskMetrics.UsedPercent),
 		RecordedAt: currentTime,
 	})
 

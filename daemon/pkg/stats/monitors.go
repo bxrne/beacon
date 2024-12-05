@@ -23,13 +23,23 @@ type HostMonitor interface {
 type MemoryMon struct{}
 
 func (MemoryMon) VirtualMemory() (*mem.VirtualMemoryStat, error) {
-	return mem.VirtualMemory()
+	vmStat, err := mem.VirtualMemory()
+	if err != nil {
+		return nil, err
+	}
+	vmStat.UsedPercent = vmStat.UsedPercent
+	return vmStat, nil
 }
 
 type DiskMon struct{}
 
 func (DiskMon) Usage(path string) (*disk.UsageStat, error) {
-	return disk.Usage(path)
+	usageStat, err := disk.Usage(path)
+	if err != nil {
+		return nil, err
+	}
+	usageStat.UsedPercent = usageStat.UsedPercent
+	return usageStat, nil
 }
 
 type HostMon struct{}

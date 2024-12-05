@@ -1,8 +1,6 @@
 package stats
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"os/exec"
 	"sort"
@@ -35,8 +33,7 @@ func (d *DeviceMetrics) String() string {
 }
 
 func GetDeviceUUID() string {
-	cmd := exec.Command("hostid")       // Get host identifier (available on Unix-like systems)
-	output, _ := cmd.Output()           // Execute command and get output
-	hash := sha256.Sum256(output)       // Hash the output
-	return hex.EncodeToString(hash[:8]) // Return first 8 bytes as hex string
+	cmd := exec.Command("hostid") // Get host identifier (available on Unix-like systems)
+	output, _ := cmd.Output()     // Execute command and get output
+	return string(output)
 }
