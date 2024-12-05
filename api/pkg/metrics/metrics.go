@@ -9,9 +9,10 @@ import (
 
 // These should match values in metric_types table
 type Metric struct {
-	Type  string  `json:"type"` // References metric_types.name
-	Value float64 `json:"value"`
-	Unit  string  `json:"unit"` // References units.name
+	Type       string `json:"type"`  // References metric_types.name
+	Value      string `json:"value"` // Changed from float64 to string
+	Unit       string `json:"unit"`  // References units.name
+	RecordedAt string `json:"recorded_at"`
 }
 
 type DeviceMetrics struct {
@@ -86,7 +87,7 @@ func PersistMetric(db *gorm.DB, deviceMetrics DeviceMetrics, name string) error 
 
 		newMetric := models.Metric{
 			TypeID:   metricType.ID,
-			Value:    metric.Value,
+			Value:    metric.Value, // No need to format as string
 			UnitID:   unit.ID,
 			DeviceID: device.ID,
 		}

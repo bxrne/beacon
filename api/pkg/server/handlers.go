@@ -50,6 +50,15 @@ func (s *Server) handleMetric(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	for _, metric := range deviceMetrics.Metrics {
+		if metric.Type == "" || metric.Unit == "" || metric.Value == "" || metric.RecordedAt == "" {
+			res := errorResponse{Error: "all metric fields must be filled"}
+			s.logger.Errorf(res.Error)
+			s.respondJSON(w, http.StatusBadRequest, res)
+			return
+		}
+	}
+
 	if err := deviceMetrics.Validate(s.db); err != nil {
 		res := errorResponse{Error: "invalid metrics: " + err.Error()}
 		s.logger.Errorf(res.Error)

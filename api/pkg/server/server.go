@@ -100,9 +100,26 @@ func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
+
+		// Log incoming request details
+		s.logger.Infof("INCOMING REQUEST Method=%s Path=%s Source=%s Headers=%v",
+			r.Method,
+			r.URL.Path,
+			r.RemoteAddr,
+			r.Header)
+
 		next.ServeHTTP(rec, r)
+
 		duration := time.Since(start).Nanoseconds()
-		s.logger.Infof("Method=%s Path=%s Status=%d DurationNS=%d Source=%s", r.Method, r.URL.Path, rec.status, duration, r.RemoteAddr)
+
+		// Log response details
+		s.logger.Infof("RESPONSE Method=%s Path=%s Status=%d DurationNS=%d Source=%s UserAgent=%s",
+			r.Method,
+			r.URL.Path,
+			rec.status,
+			duration,
+			r.RemoteAddr,
+			r.Header.Get("User-Agent"))
 	})
 }
 
