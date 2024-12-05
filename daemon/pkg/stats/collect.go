@@ -5,86 +5,91 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"regexp"
 	"strings"
+	"time"
 
-	"github.com/bxrne/beacon/pkg/config"
+	"github.com/bxrne/beacon/daemon/pkg/config"
 )
 
+// Send sends the collected metrics to the server
 func Send(cfg *config.Config, metrics DeviceMetrics) error {
-	jsonData, err := json.Marshal(metrics)
+	url := cfg.Telemetry.Server + "/metric"
+	data, err := json.Marshal(metrics)
 	if err != nil {
 		return fmt.Errorf("failed to marshal metrics: %w", err)
 	}
 
-	hostname, err := os.Hostname()
-	if err != nil {
-		return fmt.Errorf("failed to get hostname: %w", err)
-	}
-
-	req, err := http.NewRequest("POST", cfg.Telemetry.Server+"/metric", bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(data))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
-
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-Hostname", hostname)
+	req.Header.Set("X-DeviceID", cfg.Labels.Service)
 
-	resp, err := http.DefaultClient.Do(req)
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to send metrics: %w", err)
+		return fmt.Errorf("failed to send request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to send metrics: %s", resp.Status)
+		return fmt.Errorf("received non-OK response: %s", resp.Status)
 	}
 
 	return nil
 }
 
+// Collect collects metrics from the system
 func Collect(cfg *config.Config, host HostMonitor, memory MemoryMonitor, disk DiskMonitor) (DeviceMetrics, error) {
-	metrics := DeviceMetrics{}
+	var metrics []Metric
+	currentTime := time.Now().UTC().Format(time.RFC3339)
 
-	virtualMemory, err := memory.VirtualMemory()
+	// Collect host metrics
+	hostUptime, err := host.Uptime()
 	if err != nil {
-		return metrics, fmt.Errorf("failed to get memory usage: %w", err)
+		return DeviceMetrics{}, fmt.Errorf("failed to collect host metrics: %w", err)
 	}
-	metrics.Metrics = append(metrics.Metrics, Metric{
-		Type:  "memory_usage",
-		Value: virtualMemory.UsedPercent,
-		Unit:  "percent",
+	hostMetrics := []Metric{
+		{
+			Type:       "uptime",
+			Unit:       "seconds",
+			Value:      fmt.Sprintf("%d", hostUptime),
+			RecordedAt: currentTime,
+		},
+	}
+	metrics = append(metrics, hostMetrics...)
+
+	// Collect memory metrics
+	memoryMetrics, err := memory.VirtualMemory()
+	if err != nil {
+		return DeviceMetrics{}, fmt.Errorf("failed to collect memory metrics: %w", err)
+	}
+	metrics = append(metrics, Metric{
+		Type:       "cpu_usage",
+		Unit:       "bytes",
+		Value:      fmt.Sprintf("%d", memoryMetrics.Total),
+		RecordedAt: currentTime,
 	})
 
-	for _, path := range cfg.Monitoring.DiskPaths {
-		diskUsage, err := disk.Usage(path)
-		if err != nil {
-			fmt.Printf("Failed to get disk usage for %s: %v\n", path, err)
-			continue
-		}
-		metrics.Metrics = append(metrics.Metrics, Metric{
-			Type:  sanitizeMetricType(fmt.Sprintf("disk_usage_%s", path)),
-			Value: diskUsage.UsedPercent,
-			Unit:  "percent",
-		})
-	}
-
-	uptime, err := host.Uptime()
+	// Collect disk metrics
+	diskMetrics, err := disk.Usage("/")
 	if err != nil {
-		return metrics, fmt.Errorf("failed to get uptime: %w", err)
+		return DeviceMetrics{}, fmt.Errorf("failed to collect disk metrics: %w", err)
 	}
-	metrics.Metrics = append(metrics.Metrics, Metric{
-		Type:  "uptime",
-		Value: float64(uptime),
-		Unit:  "seconds",
+	metrics = append(metrics, Metric{
+		Type:       "disk_usage",
+		Unit:       "bytes",
+		Value:      fmt.Sprintf("%d", diskMetrics.Used),
+		RecordedAt: currentTime,
 	})
 
-	return metrics, nil
+	return DeviceMetrics{Metrics: metrics}, nil
 }
 
+// sanitizeMetricType sanitizes the metric type string
 func sanitizeMetricType(metricType string) string {
-	re := regexp.MustCompile(`[^\w]+`)
-	sanitized := re.ReplaceAllString(metricType, "_")
-	return strings.Trim(sanitized, "_")
+	re := regexp.MustCompile(`[^a-zA-Z0-9_]+`)
+	return strings.ToLower(re.ReplaceAllString(metricType, "_"))
 }

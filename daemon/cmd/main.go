@@ -13,5 +13,4 @@ func main() {
 	}
 
 	svc.Run()
-
 }

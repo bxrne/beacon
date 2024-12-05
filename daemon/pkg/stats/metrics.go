@@ -9,9 +9,10 @@ import (
 )
 
 type Metric struct {
-	Type  string  `json:"type"`
-	Value float64 `json:"value"`
-	Unit  string  `json:"unit"`
+	Type       string `json:"type"`
+	Value      string `json:"value"` // Changed from float64 to string
+	Unit       string `json:"unit"`
+	RecordedAt string `json:"recorded_at"` // WARN: Daemon only field
 }
 
 type DeviceMetrics struct {
@@ -27,7 +28,7 @@ func (d *DeviceMetrics) String() string {
 
 	metricsStr := ""
 	for _, metric := range d.Metrics {
-		metricsStr += fmt.Sprintf("%s: %.2f %s | ", metric.Type, metric.Value, metric.Unit)
+		metricsStr += fmt.Sprintf("%s: %s %s | ", metric.Type, metric.Value, metric.Unit) // Adjusted formatting
 	}
 
 	return metricsStr

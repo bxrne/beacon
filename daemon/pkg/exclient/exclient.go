@@ -9,8 +9,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/bxrne/beacon/pkg/config"
-	"github.com/bxrne/beacon/pkg/stats"
+	"github.com/bxrne/beacon/daemon/pkg/config"
+	"github.com/bxrne/beacon/daemon/pkg/stats"
 
 	"github.com/tarm/serial"
 )

@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/bxrne/beacon/pkg/config"
-	"github.com/bxrne/beacon/pkg/exclient"
-	"github.com/bxrne/beacon/pkg/logger"
-	"github.com/bxrne/beacon/pkg/stats"
+	"github.com/bxrne/beacon/daemon/pkg/config"
+	"github.com/bxrne/beacon/daemon/pkg/logger"
+	"github.com/bxrne/beacon/daemon/pkg/stats"
 	"github.com/charmbracelet/log"
 )
 
@@ -17,7 +16,6 @@ type Service struct {
 	hostMonitor   stats.HostMon
 	memoryMonitor stats.MemoryMon
 	diskMonitor   stats.DiskMon
-	telemetryChan chan stats.DeviceMetrics
 }
 
 func NewService(cfgPath string) (*Service, error) {
@@ -39,17 +37,10 @@ func NewService(cfgPath string) (*Service, error) {
 		hostMonitor:   hostMonitor,
 		memoryMonitor: memoryMonitor,
 		diskMonitor:   diskMonitor,
-		telemetryChan: make(chan stats.DeviceMetrics),
 	}, nil
 }
 
 func (s *Service) Run() {
-	go func() {
-		if err := exclient.ReadFromPort(s.cfg, s.telemetryChan); err != nil {
-			s.log.Error("Failed to read from external client", "error", err)
-		}
-	}()
-
 	ticker := time.NewTicker(time.Duration(s.cfg.Monitoring.Frequency) * time.Second)
 	defer ticker.Stop()
 
@@ -64,14 +55,6 @@ func (s *Service) Run() {
 
 		if err := stats.Send(s.cfg, metrics); err != nil {
 			s.log.Error("Failed to send metrics", "error", err)
-		}
-
-		select {
-		case telemetryMetrics := <-s.telemetryChan:
-			if err := stats.Send(s.cfg, telemetryMetrics); err != nil {
-				s.log.Error("Failed to send telemetry metrics", "error", err)
-			}
-		default:
 		}
 	}
 }
