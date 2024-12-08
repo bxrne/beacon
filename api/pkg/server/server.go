@@ -128,5 +128,6 @@ func (s *Server) setupRoutes() {
 	s.router.HandleFunc("/health", s.handleHealth).Methods(http.MethodGet)
 	s.router.HandleFunc("/metric", s.handleMetric).Methods(http.MethodPost)
 	s.router.HandleFunc("/metric", s.handleGetMetric).Methods(http.MethodGet)
+	s.router.HandleFunc("/device", s.handleGetDevices).Methods(http.MethodGet)
 	s.router.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 }

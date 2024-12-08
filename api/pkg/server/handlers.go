@@ -136,3 +136,25 @@ type healthResponse struct {
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	s.respondJSON(w, http.StatusOK, healthResponse{Status: "ok"})
 }
+
+// handleGetDevices godoc
+// @Summary List devices
+// @Description Find all registered devices
+// @Tags devices
+// @Produce json
+// @Success 200 {object} []string
+// @Router /device [get]
+func (s *Server) handleGetDevices(w http.ResponseWriter, r *http.Request) {
+	var devices []db.Device
+	if err := s.db.Find(&devices).Error; err != nil {
+		s.respondJSON(w, http.StatusInternalServerError, errorResponse{Error: "failed to get devices"})
+		return
+	}
+
+	var deviceNames []string
+	for _, device := range devices {
+		deviceNames = append(deviceNames, device.Name)
+	}
+
+	s.respondJSON(w, http.StatusOK, deviceNames)
+}

@@ -8,6 +8,8 @@ definitions:
     type: object
   metrics.Metric:
     properties:
+      recorded_at:
+        type: string
       type:
         description: References metric_types.name
         type: string
@@ -15,7 +17,8 @@ definitions:
         description: References units.name
         type: string
       value:
-        type: number
+        description: Changed from float64 to string
+        type: string
     type: object
   server.errorResponse:
     properties:
@@ -33,6 +36,21 @@ info:
   title: Beacon API
   version: "1.0"
 paths:
+  /device:
+    get:
+      description: Find all registered devices
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              type: string
+            type: array
+      summary: List devices
+      tags:
+      - devices
   /health:
     get:
       description: Get the health status of the server

@@ -15,6 +15,29 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/device": {
+            "get": {
+                "description": "Find all registered devices",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "List devices",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/health": {
             "get": {
                 "description": "Get the health status of the server",
@@ -149,6 +172,9 @@ const docTemplate = `{
         "metrics.Metric": {
             "type": "object",
             "properties": {
+                "recorded_at": {
+                    "type": "string"
+                },
                 "type": {
                     "description": "References metric_types.name",
                     "type": "string"
@@ -158,7 +184,8 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "value": {
-                    "type": "number"
+                    "description": "Changed from float64 to string",
+                    "type": "string"
                 }
             }
         },
@@ -191,6 +218,8 @@ var SwaggerInfo = &swag.Spec{
 	Description:      "Collects device and metric data from clients",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
+	// LeftDelim:        "{{",
+	// RightDelim:       "}}", // WARN: This is an auto-gen error needs to be checked pre-dep
 }
 
 func init() {
