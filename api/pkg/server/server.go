@@ -8,9 +8,10 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	// "gorm.io/gorm/logger" // Remove unused import
 
 	_ "github.com/bxrne/beacon/api/docs" // This line is necessary for go-swagger to find your docs
-	"github.com/bxrne/beacon/api/pkg/config"
+	"github.com/bxrne/beacon/api/internal/config"
 	"github.com/bxrne/beacon/api/pkg/metrics"
 	"github.com/charmbracelet/log"
 	"github.com/gorilla/mux"
@@ -28,10 +29,12 @@ type Server struct {
 
 func New(cfg *config.Config, logger *log.Logger, db *gorm.DB) *Server {
 	s := &Server{
-		router:       mux.NewRouter(),
-		logger:       logger,
-		cfg:          cfg,
-		db:           db,
+		router: mux.NewRouter(),
+		logger: logger,
+		cfg:    cfg,
+		db:     db.Session(&gorm.Session{
+			// Logger: logger.Default.LogMode(logger.Silent), // Fix incorrect usage
+		}),
 		metricsCache: metrics.NewMetricsCache(cfg),
 	}
 
@@ -102,24 +105,24 @@ func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
 		rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
 
 		// Log incoming request details
-		s.logger.Infof("INCOMING REQUEST Method=%s Path=%s Source=%s Headers=%v",
+		s.logger.Infof("REQUEST Method=%s Path=%s Source=%s ",
 			r.Method,
 			r.URL.Path,
 			r.RemoteAddr,
-			r.Header)
+		)
 
 		next.ServeHTTP(rec, r)
 
 		duration := time.Since(start).Nanoseconds()
 
 		// Log response details
-		s.logger.Infof("RESPONSE Method=%s Path=%s Status=%d DurationNS=%d Source=%s UserAgent=%s",
+		s.logger.Infof("RESPONSE Method=%s Path=%s Status=%d DurationNS=%d Source=%s",
 			r.Method,
 			r.URL.Path,
 			rec.status,
 			duration,
 			r.RemoteAddr,
-			r.Header.Get("User-Agent"))
+		)
 	})
 }
 
@@ -128,5 +131,6 @@ func (s *Server) setupRoutes() {
 	s.router.HandleFunc("/health", s.handleHealth).Methods(http.MethodGet)
 	s.router.HandleFunc("/metric", s.handleMetric).Methods(http.MethodPost)
 	s.router.HandleFunc("/metric", s.handleGetMetric).Methods(http.MethodGet)
+	s.router.HandleFunc("/device", s.handleGetDevices).Methods(http.MethodGet)
 	s.router.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 }

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bxrne/beacon/daemon/pkg/config"
+	"github.com/bxrne/beacon/daemon/internal/config"
 )
 
 // Send sends the collected metrics to the server
@@ -44,7 +44,7 @@ func Send(cfg *config.Config, metrics DeviceMetrics) error {
 // Collect collects metrics from the system
 func Collect(cfg *config.Config, host HostMonitor, memory MemoryMonitor, disk DiskMonitor) (DeviceMetrics, error) {
 	var metrics []Metric
-	currentTime := time.Now().UTC().Format(time.RFC3339)
+	currentTime := time.Now().UTC()
 
 	// Collect host metrics
 	hostUptime, err := host.Uptime()
@@ -56,7 +56,7 @@ func Collect(cfg *config.Config, host HostMonitor, memory MemoryMonitor, disk Di
 			Type:       "uptime",
 			Unit:       "seconds",
 			Value:      fmt.Sprintf("%d", hostUptime),
-			RecordedAt: currentTime,
+			RecordedAt: fmt.Sprintf("%s", currentTime.Format(time.RFC3339)),
 		},
 	}
 	metrics = append(metrics, hostMetrics...)
@@ -70,7 +70,7 @@ func Collect(cfg *config.Config, host HostMonitor, memory MemoryMonitor, disk Di
 		Type:       "cpu_usage",
 		Unit:       "percent",
 		Value:      fmt.Sprintf("%.2f", memoryMetrics.UsedPercent),
-		RecordedAt: currentTime,
+		RecordedAt: fmt.Sprintf("%s", currentTime.Format(time.RFC3339)),
 	})
 
 	// Collect disk metrics
@@ -82,7 +82,7 @@ func Collect(cfg *config.Config, host HostMonitor, memory MemoryMonitor, disk Di
 		Type:       "disk_usage",
 		Unit:       "percent",
 		Value:      fmt.Sprintf("%.2f", diskMetrics.UsedPercent),
-		RecordedAt: currentTime,
+		RecordedAt: fmt.Sprintf("%s", currentTime.Format(time.RFC3339)),
 	})
 
 	return DeviceMetrics{Metrics: metrics}, nil

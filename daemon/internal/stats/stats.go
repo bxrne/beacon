@@ -3,8 +3,7 @@ package stats
 import (
 	"fmt"
 
-	api "github.com/bxrne/beacon/api/pkg/db"
-	"github.com/bxrne/beacon/daemon/pkg/db"
+	"github.com/bxrne/beacon/api/pkg/db"
 	"gorm.io/gorm"
 )
 
@@ -26,7 +25,7 @@ func ValidateUnit(gorm_db *gorm.DB, unit string) error {
 	var exists bool
 	err := gorm_db.Model(&db.Unit{}).Select("count(*) > 0").Where("name = ?", unit).Find(&exists).Error
 	if err != nil {
-		return fmt.Errorf("failed to check unit: %w", unit)
+		return fmt.Errorf("failed to check unit: %s", unit)
 	}
 	if !exists {
 		return fmt.Errorf("invalid unit: %s", unit)
@@ -53,24 +52,24 @@ func (dm DeviceMetrics) Validate(db *gorm.DB) error {
 }
 
 // PersistMetric persists the metrics for a device
-func PersistMetric(db *gorm.DB, deviceMetrics DeviceMetrics, name string) error {
+func PersistMetric(gorm_db *gorm.DB, deviceMetrics DeviceMetrics, name string) error {
 	if name == "" {
 		return fmt.Errorf("name is empty")
 	}
 
-	var device api.Device
-	if err := db.First(&device, "name = ?", name).Error; err != nil {
+	var device db.Device
+	if err := gorm_db.First(&device, "name = ?", name).Error; err != nil {
 		return fmt.Errorf("device not found")
 	}
 
 	for _, metric := range deviceMetrics.Metrics {
-		var metricType api.MetricType
-		if err := db.First(&metricType, "name = ?", metric.Type).Error; err != nil {
+		var metricType db.MetricType
+		if err := gorm_db.First(&metricType, "name = ?", metric.Type).Error; err != nil {
 			return err
 		}
 
-		var unit api.Unit
-		if err := db.First(&unit, "name = ?", metric.Unit).Error; err != nil {
+		var unit db.Unit
+		if err := gorm_db.First(&unit, "name = ?", metric.Unit).Error; err != nil {
 			return err
 		}
 
@@ -79,7 +78,7 @@ func PersistMetric(db *gorm.DB, deviceMetrics DeviceMetrics, name string) error 
 			Value: metric.Value, // No need to format as string
 			Unit:  fmt.Sprintf("%d", unit.ID),
 		}
-		if err := db.Create(&newMetric).Error; err != nil {
+		if err := gorm_db.Create(&newMetric).Error; err != nil {
 			return err
 		}
 	}

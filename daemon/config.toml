@@ -1,5 +1,5 @@
 [monitoring]
-frequency = 5
+frequency = 1
 disk_paths = ["/"]
 
 [labels]
@@ -11,5 +11,5 @@ level = "debug"
 
 [telemetry]
 server = "http://localhost:3000"
-ex_client_port = "/dev/tty.usbserial-14110"
-ex_client_baud = 115200
+retry_interval = 5
+interval = 10

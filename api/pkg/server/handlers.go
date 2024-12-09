@@ -68,7 +68,7 @@ func (s *Server) handleMetric(w http.ResponseWriter, r *http.Request) {
 
 	if err := metrics.PersistMetric(s.db, deviceMetrics, deviceID); err != nil {
 		res := errorResponse{Error: "failed to persist metrics"}
-		s.logger.Errorf(res.Error)
+		s.logger.Errorf(res.Error, err)
 		s.respondJSON(w, http.StatusBadRequest, res)
 		return
 	}
@@ -110,7 +110,7 @@ func (s *Server) handleGetMetric(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var metrics []db.Metric
-	if err := s.db.Where("device_id = ?", device.ID).Find(&metrics).Error; err != nil {
+	if err := s.db.Preload("Type").Preload("Unit").Where("device_id = ?", device.ID).Find(&metrics).Error; err != nil {
 		res := errorResponse{Error: "failed to get metrics"}
 		s.logger.Errorf(res.Error)
 		s.respondJSON(w, http.StatusInternalServerError, res)
@@ -135,4 +135,26 @@ type healthResponse struct {
 // @Router       /health [get]
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	s.respondJSON(w, http.StatusOK, healthResponse{Status: "ok"})
+}
+
+// handleGetDevices godoc
+// @Summary List devices
+// @Description Find all registered devices
+// @Tags devices
+// @Produce json
+// @Success 200 {object} []string
+// @Router /device [get]
+func (s *Server) handleGetDevices(w http.ResponseWriter, r *http.Request) {
+	var devices []db.Device
+	if err := s.db.Find(&devices).Error; err != nil {
+		s.respondJSON(w, http.StatusInternalServerError, errorResponse{Error: "failed to get devices"})
+		return
+	}
+
+	var deviceNames []string
+	for _, device := range devices {
+		deviceNames = append(deviceNames, device.Name)
+	}
+
+	s.respondJSON(w, http.StatusOK, deviceNames)
 }

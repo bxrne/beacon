@@ -7,6 +7,29 @@
         "version": "1.0"
     },
     "paths": {
+        "/device": {
+            "get": {
+                "description": "Find all registered devices",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "devices"
+                ],
+                "summary": "List devices",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/health": {
             "get": {
                 "description": "Get the health status of the server",
@@ -141,6 +164,9 @@
         "metrics.Metric": {
             "type": "object",
             "properties": {
+                "recorded_at": {
+                    "type": "string"
+                },
                 "type": {
                     "description": "References metric_types.name",
                     "type": "string"
@@ -150,7 +176,8 @@
                     "type": "string"
                 },
                 "value": {
-                    "type": "number"
+                    "description": "Changed from float64 to string",
+                    "type": "string"
                 }
             }
         },

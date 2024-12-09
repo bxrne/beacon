@@ -7,9 +7,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/bxrne/beacon/api/pkg/config"
+	"github.com/bxrne/beacon/api/internal/config"
+	"github.com/bxrne/beacon/api/internal/logger"
 	"github.com/bxrne/beacon/api/pkg/db"
-	"github.com/bxrne/beacon/api/pkg/logger"
 	"github.com/bxrne/beacon/api/pkg/server"
 
 	_ "github.com/bxrne/beacon/api/docs" // This line is necessary for go-swagger to find your docs
