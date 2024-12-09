@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	// "gorm.io/gorm/logger" // Remove unused import
 
 	_ "github.com/bxrne/beacon/api/docs" // This line is necessary for go-swagger to find your docs
 	"github.com/bxrne/beacon/api/pkg/config"
@@ -28,10 +29,12 @@ type Server struct {
 
 func New(cfg *config.Config, logger *log.Logger, db *gorm.DB) *Server {
 	s := &Server{
-		router:       mux.NewRouter(),
-		logger:       logger,
-		cfg:          cfg,
-		db:           db,
+		router: mux.NewRouter(),
+		logger: logger,
+		cfg:    cfg,
+		db:     db.Session(&gorm.Session{
+			// Logger: logger.Default.LogMode(logger.Silent), // Fix incorrect usage
+		}),
 		metricsCache: metrics.NewMetricsCache(cfg),
 	}
 

@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"fmt"
+	"time"
 
 	models "github.com/bxrne/beacon/api/pkg/db"
 	"gorm.io/gorm"
@@ -85,11 +86,17 @@ func PersistMetric(db *gorm.DB, deviceMetrics DeviceMetrics, name string) error 
 			return err
 		}
 
+		recordedAt, err := time.Parse(time.RFC3339, metric.RecordedAt)
+		if err != nil {
+			return fmt.Errorf("invalid recorded_at format: %w", err)
+		}
+
 		newMetric := models.Metric{
-			TypeID:   metricType.ID,
-			Value:    metric.Value, // No need to format as string
-			UnitID:   unit.ID,
-			DeviceID: device.ID,
+			TypeID:     metricType.ID,
+			Value:      metric.Value, // No need to format as string
+			UnitID:     unit.ID,
+			DeviceID:   device.ID,
+			RecordedAt: recordedAt,
 		}
 		if err := db.Create(&newMetric).Error; err != nil {
 			return err

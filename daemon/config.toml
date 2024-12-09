@@ -1,5 +1,5 @@
 [monitoring]
-frequency = 5
+frequency = 1
 disk_paths = ["/"]
 
 [labels]

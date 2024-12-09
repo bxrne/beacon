@@ -68,7 +68,7 @@ func (s *Server) handleMetric(w http.ResponseWriter, r *http.Request) {
 
 	if err := metrics.PersistMetric(s.db, deviceMetrics, deviceID); err != nil {
 		res := errorResponse{Error: "failed to persist metrics"}
-		s.logger.Errorf(res.Error)
+		s.logger.Errorf(res.Error, err)
 		s.respondJSON(w, http.StatusBadRequest, res)
 		return
 	}
@@ -110,7 +110,7 @@ func (s *Server) handleGetMetric(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var metrics []db.Metric
-	if err := s.db.Where("device_id = ?", device.ID).Find(&metrics).Error; err != nil {
+	if err := s.db.Preload("Type").Preload("Unit").Where("device_id = ?", device.ID).Find(&metrics).Error; err != nil {
 		res := errorResponse{Error: "failed to get metrics"}
 		s.logger.Errorf(res.Error)
 		s.respondJSON(w, http.StatusInternalServerError, res)
