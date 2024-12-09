@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/bxrne/beacon/api/pkg/db"
 	"github.com/bxrne/beacon/api/pkg/metrics"
@@ -161,11 +162,40 @@ func (s *Server) handleGetDevices(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleGetMetrics(w http.ResponseWriter, r *http.Request) {
 	var metrics []db.Metric
-	limit := 1000 // Limit the number of rows fetched
-	offset := 0   // Add pagination support
-	if err := s.db.Limit(limit).Offset(offset).Find(&metrics).Error; err != nil {
+	limit := 10                // Default limit per page
+	page := 1                  // Default page number
+	sort := "recorded_at desc" // Default sort order
+
+	// Parse query parameters
+	if p := r.URL.Query().Get("page"); p != "" {
+		if parsedPage, err := strconv.Atoi(p); err == nil && parsedPage > 0 {
+			page = parsedPage
+		}
+	}
+	if s := r.URL.Query().Get("sort"); s != "" {
+		sort = s
+	}
+
+	offset := (page - 1) * limit
+
+	if err := s.db.Preload("Type").Preload("Unit").Order(sort).Limit(limit).Offset(offset).Find(&metrics).Error; err != nil {
 		s.respondJSON(w, http.StatusInternalServerError, errorResponse{Error: "failed to get metrics"})
 		return
 	}
-	s.respondJSON(w, http.StatusOK, metrics)
+
+	// Get total count for pagination
+	var totalRecords int64
+	if err := s.db.Model(&db.Metric{}).Count(&totalRecords).Error; err != nil {
+		s.respondJSON(w, http.StatusInternalServerError, errorResponse{Error: "failed to get total count"})
+		return
+	}
+
+	response := map[string]interface{}{
+		"metrics":      metrics,
+		"totalRecords": totalRecords,
+		"currentPage":  page,
+		"totalPages":   (totalRecords + int64(limit) - 1) / int64(limit),
+	}
+
+	s.respondJSON(w, http.StatusOK, response)
 }

@@ -34,12 +34,16 @@ func migrate(db *gorm.DB, cfg *config.Config) error {
 		return err
 	}
 
-	// Add indexes to optimize queries
-	if err := db.Exec("CREATE INDEX idx_metrics_device_id ON metrics(device_id)").Error; err != nil {
-		return err
+	// Check if indexes exist before creating them
+	if !indexExists(db, "idx_metrics_device_id") {
+		if err := db.Exec("CREATE INDEX idx_metrics_device_id ON metrics(device_id)").Error; err != nil {
+			return err
+		}
 	}
-	if err := db.Exec("CREATE INDEX idx_metrics_recorded_at ON metrics(recorded_at)").Error; err != nil {
-		return err
+	if !indexExists(db, "idx_metrics_recorded_at") {
+		if err := db.Exec("CREATE INDEX idx_metrics_recorded_at ON metrics(recorded_at)").Error; err != nil {
+			return err
+		}
 	}
 
 	var units []Unit
@@ -59,6 +63,12 @@ func migrate(db *gorm.DB, cfg *config.Config) error {
 	}
 
 	return nil
+}
+
+func indexExists(db *gorm.DB, indexName string) bool {
+	var result int
+	db.Raw("SELECT COUNT(1) FROM sqlite_master WHERE type='index' AND name=?", indexName).Scan(&result)
+	return result > 0
 }
 
 func RegisterDevice(db *gorm.DB, name string) error {

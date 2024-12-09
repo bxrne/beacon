@@ -137,4 +137,7 @@ func (s *Server) setupRoutes() {
 	apiRouter.HandleFunc("/device", s.handleGetDevices).Methods(http.MethodGet)
 	apiRouter.HandleFunc("/metrics", s.handleGetMetrics).Methods(http.MethodGet)
 	apiRouter.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
+
+	viewRouter := s.router.PathPrefix("/view").Subrouter()
+	viewRouter.HandleFunc("/metrics", s.handleGetMetricsView).Methods(http.MethodGet)
 }

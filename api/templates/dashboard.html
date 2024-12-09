@@ -3,14 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <title>Metrics Dashboard</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <script src="https://unpkg.com/htmx.org@1.6.1"></script>
 </head>
 <body>
-    <h1>Metrics Dashboard</h1>
-    <div hx-get="/api/metrics" hx-trigger="load" hx-target="#metrics" hx-headers='{"X-DeviceID": "beacon-daemon"}'>
-        <div id="metrics">
-            <!-- Metrics will be loaded here -->
+    <div class="container">
+        <h1 class="mt-5">Metrics Dashboard</h1>
+        <div class="table-responsive">
+            <table class="table table-striped table-bordered mt-3">
+                <thead>
+                    <tr>
+                        <th hx-get="/api/metrics?sort=type" hx-trigger="click" hx-target="#metrics">Type</th>
+                        <th hx-get="/api/metrics?sort=value" hx-trigger="click" hx-target="#metrics">Value</th>
+                        <th hx-get="/api/metrics?sort=unit" hx-trigger="click" hx-target="#metrics">Unit</th>
+                        <th hx-get="/api/metrics?sort=recorded_at" hx-trigger="click" hx-target="#metrics">Recorded At</th>
+                    </tr>
+                </thead>
+                <tbody id="metrics" hx-get="/api/metrics?page={{.Page}}" hx-trigger="load" hx-headers='{"X-DeviceID": "beacon-daemon"}'>
+                    <!-- Metrics will be loaded here -->
+                </tbody>
+            </table>
         </div>
+        <nav>
+            <ul class="pagination">
+                <!-- Pagination links will be dynamically generated here -->
+            </ul>
+        </nav>
     </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        document.addEventListener('htmx:afterOnLoad', function(evt) {
+            const tbody = document.getElementById('metrics');
+            const response = JSON.parse(tbody.innerHTML);
+            const metrics = response.metrics;
+            tbody.innerHTML = '';
+            metrics.forEach(metric => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${metric.Type ? metric.Type.Name : ''}</td>
+                    <td>${metric.Value}</td>
+                    <td>${metric.Unit ? metric.Unit.Name : ''}</td>
+                    <td>${new Date(metric.RecordedAt).toLocaleString()}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // Update pagination
+            const totalRecords = response.totalRecords;
+            const recordsPerPage = 10;
+            const totalPages = response.totalPages;
+            const currentPage = response.currentPage;
+            const pagination = document.querySelector('.pagination');
+            pagination.innerHTML = '';
+
+            const createPageItem = (page, text = page) => {
+                const pageItem = document.createElement('li');
+                pageItem.className = 'page-item' + (page === currentPage ? ' active' : '');
+                pageItem.innerHTML = `<a class="page-link" href="/?page=${page}" hx-get="/api/metrics?page=${page}" hx-target="#metrics" hx-trigger="click">${text}</a>`;
+                return pageItem;
+            };
+
+            if (currentPage > 1) {
+                pagination.appendChild(createPageItem(currentPage - 1, '«'));
+            }
+
+            const startPage = Math.max(1, currentPage - 2);
+            const endPage = Math.min(totalPages, currentPage + 2);
+
+            for (let i = startPage; i <= endPage; i++) {
+                pagination.appendChild(createPageItem(i));
+            }
+
+            if (currentPage < totalPages) {
+                pagination.appendChild(createPageItem(currentPage + 1, '»'));
+            }
+        });
+    </script>
 </body>
 </html>
