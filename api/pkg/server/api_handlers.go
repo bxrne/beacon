@@ -161,7 +161,9 @@ func (s *Server) handleGetDevices(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleGetMetrics(w http.ResponseWriter, r *http.Request) {
 	var metrics []db.Metric
-	if err := s.db.Find(&metrics).Error; err != nil {
+	limit := 1000 // Limit the number of rows fetched
+	offset := 0   // Add pagination support
+	if err := s.db.Limit(limit).Offset(offset).Find(&metrics).Error; err != nil {
 		s.respondJSON(w, http.StatusInternalServerError, errorResponse{Error: "failed to get metrics"})
 		return
 	}

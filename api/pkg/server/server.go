@@ -29,12 +29,10 @@ type Server struct {
 
 func New(cfg *config.Config, logger *log.Logger, db *gorm.DB) *Server {
 	s := &Server{
-		router: mux.NewRouter(),
-		logger: logger,
-		cfg:    cfg,
-		db:     db.Session(&gorm.Session{
-			// Logger: logger.Default.LogMode(logger.Silent), // Fix incorrect usage
-		}),
+		router:       mux.NewRouter(),
+		logger:       logger,
+		cfg:          cfg,
+		db:           db.Session(&gorm.Session{}),
 		metricsCache: metrics.NewMetricsCache(cfg),
 	}
 
@@ -125,8 +123,7 @@ func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
 func (s *Server) setupRoutes() {
 	s.router.Use(s.loggingMiddleware)
 
-	s.router.HandleFunc("/", s.handleIndexView).Methods(http.MethodGet)
-	s.router.HandleFunc("/dashboard", s.handleDashboardView).Methods(http.MethodGet)
+	s.router.HandleFunc("/", s.handleDashboardView).Methods(http.MethodGet)
 
 	// WARN: Silence favicon warnings
 	s.router.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {

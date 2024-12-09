@@ -34,6 +34,14 @@ func migrate(db *gorm.DB, cfg *config.Config) error {
 		return err
 	}
 
+	// Add indexes to optimize queries
+	if err := db.Exec("CREATE INDEX idx_metrics_device_id ON metrics(device_id)").Error; err != nil {
+		return err
+	}
+	if err := db.Exec("CREATE INDEX idx_metrics_recorded_at ON metrics(recorded_at)").Error; err != nil {
+		return err
+	}
+
 	var units []Unit
 	for _, unit := range cfg.Metrics.Units {
 		units = append(units, Unit{Name: unit})
