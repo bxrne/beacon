@@ -11,4 +11,5 @@ level = "debug"
 
 [telemetry]
 server = "http://localhost:3000"
-
+retry_interval = 5
+interval = 10

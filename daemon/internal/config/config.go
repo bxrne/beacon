@@ -12,7 +12,8 @@ type Monitoring struct {
 }
 
 type Telemetry struct {
-	Server string `toml:"server"`
+	Server        string `toml:"server"`
+	RetryInterval int    `toml:"retry_interval"` // New field
 }
 
 type Labels struct {
