@@ -128,9 +128,13 @@ func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
 
 func (s *Server) setupRoutes() {
 	s.router.Use(s.loggingMiddleware)
-	s.router.HandleFunc("/health", s.handleHealth).Methods(http.MethodGet)
-	s.router.HandleFunc("/metric", s.handleMetric).Methods(http.MethodPost)
-	s.router.HandleFunc("/metric", s.handleGetMetric).Methods(http.MethodGet)
-	s.router.HandleFunc("/device", s.handleGetDevices).Methods(http.MethodGet)
-	s.router.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
+
+	s.router.HandleFunc("/", s.handleIndexView).Methods(http.MethodGet)
+
+	apiRouter := s.router.PathPrefix("/posts").Subrouter()
+	apiRouter.HandleFunc("/health", s.handleHealth).Methods(http.MethodGet)
+	apiRouter.HandleFunc("/metric", s.handleMetric).Methods(http.MethodPost)
+	apiRouter.HandleFunc("/metric", s.handleGetMetric).Methods(http.MethodGet)
+	apiRouter.HandleFunc("/device", s.handleGetDevices).Methods(http.MethodGet)
+	apiRouter.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 }
