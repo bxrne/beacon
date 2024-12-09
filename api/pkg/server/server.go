@@ -130,11 +130,13 @@ func (s *Server) setupRoutes() {
 	s.router.Use(s.loggingMiddleware)
 
 	s.router.HandleFunc("/", s.handleIndexView).Methods(http.MethodGet)
+	s.router.HandleFunc("/dashboard", s.handleDashboardView).Methods(http.MethodGet)
 
-	apiRouter := s.router.PathPrefix("/posts").Subrouter()
+	apiRouter := s.router.PathPrefix("/api").Subrouter()
 	apiRouter.HandleFunc("/health", s.handleHealth).Methods(http.MethodGet)
 	apiRouter.HandleFunc("/metric", s.handleMetric).Methods(http.MethodPost)
 	apiRouter.HandleFunc("/metric", s.handleGetMetric).Methods(http.MethodGet)
 	apiRouter.HandleFunc("/device", s.handleGetDevices).Methods(http.MethodGet)
+	apiRouter.HandleFunc("/metrics", s.handleGetMetrics).Methods(http.MethodGet)
 	apiRouter.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 }

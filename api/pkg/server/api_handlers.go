@@ -158,3 +158,12 @@ func (s *Server) handleGetDevices(w http.ResponseWriter, r *http.Request) {
 
 	s.respondJSON(w, http.StatusOK, deviceNames)
 }
+
+func (s *Server) handleGetMetrics(w http.ResponseWriter, r *http.Request) {
+	var metrics []db.Metric
+	if err := s.db.Find(&metrics).Error; err != nil {
+		s.respondJSON(w, http.StatusInternalServerError, errorResponse{Error: "failed to get metrics"})
+		return
+	}
+	s.respondJSON(w, http.StatusOK, metrics)
+}

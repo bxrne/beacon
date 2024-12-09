@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Metrics Dashboard</title>
+    <script src="https://unpkg.com/htmx.org@1.6.1"></script>
+</head>
+<body>
+    <h1>Metrics Dashboard</h1>
+    <div hx-get="/api/metrics" hx-trigger="load" hx-target="#metrics" hx-headers='{"X-DeviceID": "beacon-daemon"}'>
+        <div id="metrics">
+            <!-- Metrics will be loaded here -->
+        </div>
+    </div>
+</body>
+</html>
