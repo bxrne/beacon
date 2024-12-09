@@ -12,9 +12,7 @@ type Monitoring struct {
 }
 
 type Telemetry struct {
-	Server       string `toml:"server"`
-	ExClientPort string `toml:"ex_client_port"`
-	ExClientBaud int    `toml:"ex_client_baud"`
+	Server string `toml:"server"`
 }
 
 type Labels struct {

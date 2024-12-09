@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bxrne/beacon/daemon/pkg/config"
+	"github.com/bxrne/beacon/daemon/internal/config"
 )
 
 // Send sends the collected metrics to the server

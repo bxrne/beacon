@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bxrne/beacon/daemon/pkg/config"
+	"github.com/bxrne/beacon/daemon/internal/config"
 	"github.com/charmbracelet/log"
 )
 
