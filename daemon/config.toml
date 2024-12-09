@@ -4,12 +4,12 @@ disk_paths = ["/"]
 
 [labels]
 environment = "production"
-service = "beacon-daemon"
+service = "beacon-daemon-test"
 
 [logging]
 level = "debug"
 
 [telemetry]
-server = "http://localhost:3000"
+server = "http://localhost:3000/api"
 retry_interval = 5
 interval = 10

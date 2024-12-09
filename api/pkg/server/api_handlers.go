@@ -30,7 +30,7 @@ func (s *Server) handleMetric(w http.ResponseWriter, r *http.Request) {
 	deviceID := r.Header.Get("X-DeviceID")
 	if deviceID == "" {
 		res := errorResponse{Error: "missing device ID"}
-		s.logger.Errorf(res.Error)
+		s.logger.Errorf("handleMetric: %s", res.Error)
 		s.respondJSON(w, http.StatusBadRequest, res)
 		return
 	}
@@ -38,7 +38,7 @@ func (s *Server) handleMetric(w http.ResponseWriter, r *http.Request) {
 	// Register the device if it doesn't exist
 	if err := db.RegisterDevice(s.db, deviceID); err != nil {
 		res := errorResponse{Error: "failed to register device"}
-		s.logger.Errorf(res.Error)
+		s.logger.Errorf("handleMetric: %s", res.Error)
 		s.respondJSON(w, http.StatusInternalServerError, res)
 		return
 	}
@@ -46,7 +46,7 @@ func (s *Server) handleMetric(w http.ResponseWriter, r *http.Request) {
 	var deviceMetrics metrics.DeviceMetrics
 	if err := json.NewDecoder(r.Body).Decode(&deviceMetrics); err != nil {
 		res := errorResponse{Error: "failed to decode request body"}
-		s.logger.Errorf(res.Error)
+		s.logger.Errorf("handleMetric: %s", res.Error)
 		s.respondJSON(w, http.StatusBadRequest, res)
 		return
 	}
@@ -54,7 +54,7 @@ func (s *Server) handleMetric(w http.ResponseWriter, r *http.Request) {
 	for _, metric := range deviceMetrics.Metrics {
 		if metric.Type == "" || metric.Unit == "" || metric.Value == "" || metric.RecordedAt == "" {
 			res := errorResponse{Error: "all metric fields must be filled"}
-			s.logger.Errorf(res.Error)
+			s.logger.Errorf("handleMetric: %s", res.Error)
 			s.respondJSON(w, http.StatusBadRequest, res)
 			return
 		}
@@ -62,14 +62,14 @@ func (s *Server) handleMetric(w http.ResponseWriter, r *http.Request) {
 
 	if err := deviceMetrics.Validate(s.db); err != nil {
 		res := errorResponse{Error: "invalid metrics: " + err.Error()}
-		s.logger.Errorf(res.Error)
+		s.logger.Errorf("handleMetric: %s", res.Error)
 		s.respondJSON(w, http.StatusBadRequest, res)
 		return
 	}
 
 	if err := metrics.PersistMetric(s.db, deviceMetrics, deviceID); err != nil {
 		res := errorResponse{Error: "failed to persist metrics"}
-		s.logger.Errorf(res.Error, err)
+		s.logger.Errorf("handleMetric: %s", res.Error, err)
 		s.respondJSON(w, http.StatusBadRequest, res)
 		return
 	}
@@ -91,7 +91,7 @@ func (s *Server) handleGetMetric(w http.ResponseWriter, r *http.Request) {
 	deviceID := r.Header.Get("X-DeviceID")
 	if deviceID == "" {
 		res := errorResponse{Error: "missing device ID"}
-		s.logger.Errorf(res.Error)
+		s.logger.Errorf("handleGetMetric: %s", res.Error)
 		s.respondJSON(w, http.StatusBadRequest, res)
 		return
 	}
@@ -100,11 +100,11 @@ func (s *Server) handleGetMetric(w http.ResponseWriter, r *http.Request) {
 	if err := s.db.First(&device, "name = ?", deviceID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			res := errorResponse{Error: "device not found"}
-			s.logger.Errorf(res.Error)
+			s.logger.Errorf("handleGetMetric: %s", res.Error)
 			s.respondJSON(w, http.StatusNotFound, res)
 		} else {
 			res := errorResponse{Error: "failed to query device"}
-			s.logger.Errorf(res.Error)
+			s.logger.Errorf("handleGetMetric: %s", res.Error)
 			s.respondJSON(w, http.StatusInternalServerError, res)
 		}
 		return
@@ -113,7 +113,7 @@ func (s *Server) handleGetMetric(w http.ResponseWriter, r *http.Request) {
 	var metrics []db.Metric
 	if err := s.db.Preload("Type").Preload("Unit").Where("device_id = ?", device.ID).Find(&metrics).Error; err != nil {
 		res := errorResponse{Error: "failed to get metrics"}
-		s.logger.Errorf(res.Error)
+		s.logger.Errorf("handleGetMetric: %s", res.Error)
 		s.respondJSON(w, http.StatusInternalServerError, res)
 		return
 	}
@@ -148,6 +148,7 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleGetDevices(w http.ResponseWriter, r *http.Request) {
 	var devices []db.Device
 	if err := s.db.Find(&devices).Error; err != nil {
+		s.logger.Errorf("handleGetDevices: failed to get devices: %s", err)
 		s.respondJSON(w, http.StatusInternalServerError, errorResponse{Error: "failed to get devices"})
 		return
 	}
@@ -161,6 +162,25 @@ func (s *Server) handleGetDevices(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleGetMetrics(w http.ResponseWriter, r *http.Request) {
+	deviceID := r.Header.Get("X-DeviceID")
+	if deviceID == "" {
+		s.logger.Errorf("handleGetMetrics: missing device ID")
+		s.respondJSON(w, http.StatusBadRequest, errorResponse{Error: "missing device ID"})
+		return
+	}
+
+	var device db.Device
+	if err := s.db.First(&device, "name = ?", deviceID).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			s.logger.Errorf("handleGetMetrics: device not found")
+			s.respondJSON(w, http.StatusNotFound, errorResponse{Error: "device not found"})
+		} else {
+			s.logger.Errorf("handleGetMetrics: failed to query device: %s", err)
+			s.respondJSON(w, http.StatusInternalServerError, errorResponse{Error: "failed to query device"})
+		}
+		return
+	}
+
 	var metrics []db.Metric
 	limit := 10                // Default limit per page
 	page := 1                  // Default page number
@@ -178,14 +198,16 @@ func (s *Server) handleGetMetrics(w http.ResponseWriter, r *http.Request) {
 
 	offset := (page - 1) * limit
 
-	if err := s.db.Preload("Type").Preload("Unit").Order(sort).Limit(limit).Offset(offset).Find(&metrics).Error; err != nil {
+	if err := s.db.Preload("Type").Preload("Unit").Where("device_id = ?", device.ID).Order(sort).Limit(limit).Offset(offset).Find(&metrics).Error; err != nil {
+		s.logger.Errorf("handleGetMetrics: failed to get metrics: %s", err)
 		s.respondJSON(w, http.StatusInternalServerError, errorResponse{Error: "failed to get metrics"})
 		return
 	}
 
 	// Get total count for pagination
 	var totalRecords int64
-	if err := s.db.Model(&db.Metric{}).Count(&totalRecords).Error; err != nil {
+	if err := s.db.Model(&db.Metric{}).Where("device_id = ?", device.ID).Count(&totalRecords).Error; err != nil {
+		s.logger.Errorf("handleGetMetrics: failed to get total count: %s", err)
 		s.respondJSON(w, http.StatusInternalServerError, errorResponse{Error: "failed to get total count"})
 		return
 	}
