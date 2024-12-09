@@ -11,7 +11,7 @@ import (
 	// "gorm.io/gorm/logger" // Remove unused import
 
 	_ "github.com/bxrne/beacon/api/docs" // This line is necessary for go-swagger to find your docs
-	"github.com/bxrne/beacon/api/pkg/config"
+	"github.com/bxrne/beacon/api/internal/config"
 	"github.com/bxrne/beacon/api/pkg/metrics"
 	"github.com/charmbracelet/log"
 	"github.com/gorilla/mux"
