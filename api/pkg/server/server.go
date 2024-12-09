@@ -50,10 +50,6 @@ func (s *Server) respondJSON(w http.ResponseWriter, status int, data interface{}
 	}
 }
 
-func (s *Server) respondError(w http.ResponseWriter, code int, message string) {
-	s.respondJSON(w, code, map[string]string{"error": message})
-}
-
 func (s *Server) Start(ctx context.Context) error {
 	s.srv = &http.Server{
 		Addr:         fmt.Sprintf(":%d", s.cfg.Server.Port),
@@ -131,6 +127,11 @@ func (s *Server) setupRoutes() {
 
 	s.router.HandleFunc("/", s.handleIndexView).Methods(http.MethodGet)
 	s.router.HandleFunc("/dashboard", s.handleDashboardView).Methods(http.MethodGet)
+
+	// WARN: Silence favicon warnings
+	s.router.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
 
 	apiRouter := s.router.PathPrefix("/api").Subrouter()
 	apiRouter.HandleFunc("/health", s.handleHealth).Methods(http.MethodGet)
