@@ -93,7 +93,7 @@ func PersistMetric(db *gorm.DB, deviceMetrics DeviceMetrics, name string) error 
 
 		newMetric := models.Metric{
 			TypeID:     metricType.ID,
-			Value:      metric.Value, // No need to format as string
+			Value:      metric.Value,
 			UnitID:     unit.ID,
 			DeviceID:   device.ID,
 			RecordedAt: recordedAt,
