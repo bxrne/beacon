@@ -15,12 +15,5 @@ cache_ttl = 60
 dsn = "test.db"
 
 [metrics]
-types = [
-  "cpu_usage",
-  "disk_usage",
-  "uptime",
-  "car_light",
-  "pedestrian_light",
-  "pedestrian_button",
-]
-units = ["percent", "bytes", "seconds", "quality"]
+types = ["cpu_usage", "disk_usage", "uptime"]
+units = ["percent", "seconds"]
