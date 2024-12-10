@@ -21,12 +21,13 @@
 #define GPIO_INTERRUPT_TRIGGER GPIO_INTR_NEGEDGE
 #define BUTTON_QUEUE_SIZE 5 // Size of button event queue
 
-#define W_SSID "coldspot"    // Ephemeral credentials for testing
-#define W_PASS "helloworld1" // Ephemeral credentials for testing
-#define W_MAX_RETRY 5
+#define EVENT_QUEUE_SIZE 10
+#define BUTTON_TASK_STACK_SIZE 2048
+#define BUTTON_TASK_PRIORITY 10
+#define TRAFFIC_LIGHT_TASK_STACK_SIZE 4096
+#define TRAFFIC_LIGHT_TASK_PRIORITY 5
 
-#define TELEMETRY_URL "localhost:3000/metric"
-#define TELEMETRY_TASK_FREQUENCY_MS 1000
+#define ESP_INTR_FLAG_DEFAULT 0
 
 typedef enum
 {

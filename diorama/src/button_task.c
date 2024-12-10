@@ -1,6 +1,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
+#include "freertos/semphr.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
 #include "config.h"
@@ -8,13 +9,13 @@
 #include "cJSON.h"
 
 extern QueueHandle_t event_queue;
+extern SemaphoreHandle_t button_semaphore;
 extern TaskHandle_t button_task_handle;
-extern TaskHandle_t traffic_light_task_handle;
 
 static void IRAM_ATTR button_isr_handler(void *arg)
 {
   BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-  vTaskNotifyGiveFromISR(button_task_handle, &xHigherPriorityTaskWoken);
+  xSemaphoreGiveFromISR(button_semaphore, &xHigherPriorityTaskWoken);
   portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 
@@ -31,38 +32,23 @@ void button_task(void *pvParameters)
       .intr_type = GPIO_INTR_NEGEDGE};
 
   gpio_config(&io_conf);
-  gpio_install_isr_service(0);
-  gpio_isr_handler_add(PED_BUTTON_PIN, button_isr_handler, (void *)PED_BUTTON_PIN);
-
-  button_state_t button_state = BUTTON_RELEASED;
-  TickType_t last_press_time = 0;
+  gpio_install_isr_service(ESP_INTR_FLAG_DEFAULT);
+  gpio_isr_handler_add(PED_BUTTON_PIN, button_isr_handler, NULL);
 
   while (1)
   {
-    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-
-    TickType_t current_time = xTaskGetTickCount();
-
-    // Handle debouncing
-    if (button_state == BUTTON_RELEASED &&
-        (current_time - last_press_time) >= pdMS_TO_TICKS(DEBOUNCE_TIME_MS))
+    // Wait for semaphore from ISR
+    if (xSemaphoreTake(button_semaphore, portMAX_DELAY) == pdTRUE)
     {
-      // Verify button is still pressed after debounce delay
+      // Debounce handling
       vTaskDelay(pdMS_TO_TICKS(DEBOUNCE_TIME_MS));
       if (gpio_get_level(PED_BUTTON_PIN) == 0)
       {
-        button_state = BUTTON_PRESSED;
-        last_press_time = current_time;
-
-        ESP_LOGI("EVENT", "Valid button press detected");
-        xTaskNotify(traffic_light_task_handle, EVENT_BUTTON_PRESS, eSetValueWithOverwrite);
+        // Button is still pressed
+        event_t event = EVENT_BUTTON_PRESS;
+        xQueueSend(event_queue, &event, portMAX_DELAY);
+        ESP_LOGI("BUTTON_TASK", "Button press event sent");
       }
-    }
-
-    // Reset button state when released
-    if (gpio_get_level(PED_BUTTON_PIN) == 1)
-    {
-      button_state = BUTTON_RELEASED;
     }
   }
 }

@@ -34,13 +34,13 @@ void traffic_light_task(void *pvParameters)
 
   while (1)
   {
-    // Wait for notification
-    uint32_t notification_value;
-    if (xTaskNotifyWait(0, ULONG_MAX, &notification_value, portMAX_DELAY))
+    event_t event;
+    // Check for button press event
+    if (xQueueReceive(event_queue, &event, pdMS_TO_TICKS(100)))
     {
-      if (notification_value == EVENT_BUTTON_PRESS)
+      if (event == EVENT_BUTTON_PRESS)
       {
-        ESP_LOGI("EVENT", "Pedestrian button pressed");
+        ESP_LOGI("TRAFFIC_LIGHT_TASK", "Pedestrian button pressed");
         pedestrian_button = true;
       }
     }
@@ -51,6 +51,7 @@ void traffic_light_task(void *pvParameters)
       gpio_set_level(CAR_GREEN_PIN, 1);
       gpio_set_level(CAR_YELLOW_PIN, 0);
       gpio_set_level(CAR_RED_PIN, 0);
+      ESP_LOGI("STATE", "Car light: Green");
 
       if (pedestrian_button)
       {
@@ -58,13 +59,11 @@ void traffic_light_task(void *pvParameters)
         vTaskDelay(pdMS_TO_TICKS(500)); // Brief delay before transition
         current_state = STATE_CAR_YELLOW;
         ESP_LOGI("STATE", "Transitioning to yellow due to pedestrian");
-        xTaskNotify(event_queue, EVENT_STATE_CHANGE, eSetValueWithOverwrite);
       }
       else
       {
         vTaskDelay(pdMS_TO_TICKS(CAR_GREEN_DURATION));
         current_state = STATE_CAR_YELLOW;
-        xTaskNotify(event_queue, EVENT_STATE_CHANGE, eSetValueWithOverwrite);
       }
       break;
 
@@ -74,7 +73,6 @@ void traffic_light_task(void *pvParameters)
       ESP_LOGI("STATE", "Car light: Yellow");
       vTaskDelay(pdMS_TO_TICKS(CAR_YELLOW_DURATION));
       current_state = STATE_CAR_RED;
-      xTaskNotify(event_queue, EVENT_STATE_CHANGE, eSetValueWithOverwrite);
       break;
 
     case STATE_CAR_RED:
@@ -85,13 +83,11 @@ void traffic_light_task(void *pvParameters)
       if (pedestrian_button)
       {
         current_state = STATE_PED_GREEN;
-        xTaskNotify(event_queue, EVENT_STATE_CHANGE, eSetValueWithOverwrite);
       }
       else
       {
         vTaskDelay(pdMS_TO_TICKS(CAR_RED_DURATION));
         current_state = STATE_CAR_GREEN;
-        xTaskNotify(event_queue, EVENT_STATE_CHANGE, eSetValueWithOverwrite);
       }
       break;
 
@@ -108,7 +104,6 @@ void traffic_light_task(void *pvParameters)
 
       pedestrian_button = false;
       current_state = STATE_CAR_GREEN;
-      xTaskNotify(event_queue, EVENT_STATE_CHANGE, eSetValueWithOverwrite);
       break;
     }
   }
