@@ -12,6 +12,7 @@
 #include "esp_netif.h"         // For esp_netif functions
 #include "esp_netif_ip_addr.h" // For esp_ip4_addr_t
 #include "config.h"
+#include "time_sync.h"
 
 static EventGroupHandle_t s_wifi_event_group;
 #define WIFI_CONNECTED_BIT BIT0
@@ -77,4 +78,11 @@ void wifi_init_sta(void)
 void wait_for_wifi_connection(void)
 {
   xEventGroupWaitBits(s_wifi_event_group, WIFI_CONNECTED_BIT, pdFALSE, pdTRUE, portMAX_DELAY);
+
+  // Initialize SNTP after WiFi connection
+  esp_err_t ret = initialize_sntp();
+  if (ret != ESP_OK)
+  {
+    ESP_LOGE(TAG, "Failed to initialize SNTP");
+  }
 }

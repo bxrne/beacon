@@ -28,11 +28,11 @@
 #define ESP_INTR_FLAG_DEFAULT 0
 
 // Wi-Fi configuration
-#define WIFI_SSID "coldspot"
-#define WIFI_PASS "helloworld1"
+#define WIFI_SSID "WIFI_SSID"
+#define WIFI_PASS "WIFI_PASS"
 
 // API configuration
-#define API_URL "http://localhost:3000/api/metric"
+#define API_URL "http://ENDPOINT:3000/api/metric"
 #define DEVICE_ID "esp-diorama"
 
 // Event types

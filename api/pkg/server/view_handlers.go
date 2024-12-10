@@ -19,15 +19,3 @@ func (s *Server) handleDashboardView(w http.ResponseWriter, r *http.Request) {
 		"Page": page,
 	})
 }
-
-func (s *Server) handleGetMetricsView(w http.ResponseWriter, r *http.Request) {
-	page := 1
-	if p := r.URL.Query().Get("page"); p != "" {
-		if parsedPage, err := strconv.Atoi(p); err == nil && parsedPage > 0 {
-			page = parsedPage
-		}
-	}
-
-	url := "/api/metrics?page=" + strconv.Itoa(page)
-	http.Redirect(w, r, url, http.StatusSeeOther)
-}

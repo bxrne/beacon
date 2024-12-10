@@ -19,6 +19,9 @@ type Server struct {
 	Port            int      `toml:"port"`
 	ShutdownTimeout int      `toml:"shutdown_timeout"`
 	AllowedOrigins  []string `toml:"allowed_origins"`
+	ReadTimeout     int      `toml:"read_timeout"`
+	WriteTimeout    int      `toml:"write_timeout"`
+	IdleTimeout     int      `toml:"idle_timeout"`
 	CacheTTL        int      `toml:"cache_ttl"`
 }
 
