@@ -69,7 +69,7 @@ func (s *Server) handleMetric(w http.ResponseWriter, r *http.Request) {
 
 	if err := metrics.PersistMetric(s.db, deviceMetrics, deviceID); err != nil {
 		res := errorResponse{Error: "failed to persist metrics"}
-		s.logger.Errorf("handleMetric: %s", res.Error, err)
+		s.logger.Errorf("handleMetric: %s", res.Error)
 		s.respondJSON(w, http.StatusBadRequest, res)
 		return
 	}
