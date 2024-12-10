@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"gorm.io/gorm"
-	// "gorm.io/gorm/logger" // Remove unused import
 
 	_ "github.com/bxrne/beacon/api/docs" // This line is necessary for go-swagger to find your docs
 	"github.com/bxrne/beacon/api/internal/config"
@@ -29,12 +28,10 @@ type Server struct {
 
 func New(cfg *config.Config, logger *log.Logger, db *gorm.DB) *Server {
 	s := &Server{
-		router: mux.NewRouter(),
-		logger: logger,
-		cfg:    cfg,
-		db:     db.Session(&gorm.Session{
-			// Logger: logger.Default.LogMode(logger.Silent), // Fix incorrect usage
-		}),
+		router:       mux.NewRouter(),
+		logger:       logger,
+		cfg:          cfg,
+		db:           db.Session(&gorm.Session{}),
 		metricsCache: metrics.NewMetricsCache(cfg),
 	}
 
@@ -48,10 +45,6 @@ func (s *Server) respondJSON(w http.ResponseWriter, status int, data interface{}
 	if err := json.NewEncoder(w).Encode(data); err != nil {
 		s.logger.Error("failed to encode response", "error", err)
 	}
-}
-
-func (s *Server) respondError(w http.ResponseWriter, code int, message string) {
-	s.respondJSON(w, code, map[string]string{"error": message})
 }
 
 func (s *Server) Start(ctx context.Context) error {
@@ -105,7 +98,7 @@ func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
 		rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
 
 		// Log incoming request details
-		s.logger.Infof("REQUEST Method=%s Path=%s Source=%s ",
+		s.logger.Debugf("REQUEST Method=%s Path=%s Source=%s ",
 			r.Method,
 			r.URL.Path,
 			r.RemoteAddr,
@@ -116,7 +109,7 @@ func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
 		duration := time.Since(start).Nanoseconds()
 
 		// Log response details
-		s.logger.Infof("RESPONSE Method=%s Path=%s Status=%d DurationNS=%d Source=%s",
+		s.logger.Debugf("RESPONSE Method=%s Path=%s Status=%d DurationNS=%d Source=%s",
 			r.Method,
 			r.URL.Path,
 			rec.status,
@@ -128,9 +121,19 @@ func (s *Server) loggingMiddleware(next http.Handler) http.Handler {
 
 func (s *Server) setupRoutes() {
 	s.router.Use(s.loggingMiddleware)
-	s.router.HandleFunc("/health", s.handleHealth).Methods(http.MethodGet)
-	s.router.HandleFunc("/metric", s.handleMetric).Methods(http.MethodPost)
-	s.router.HandleFunc("/metric", s.handleGetMetric).Methods(http.MethodGet)
-	s.router.HandleFunc("/device", s.handleGetDevices).Methods(http.MethodGet)
-	s.router.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
+
+	s.router.HandleFunc("/", s.handleDashboardView).Methods(http.MethodGet)
+
+	// WARN: Silence favicon warnings
+	s.router.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})
+
+	apiRouter := s.router.PathPrefix("/api").Subrouter()
+	apiRouter.HandleFunc("/health", s.handleHealth).Methods(http.MethodGet)
+	apiRouter.HandleFunc("/metric", s.handleMetric).Methods(http.MethodPost)
+	apiRouter.HandleFunc("/metric", s.handleGetMetric).Methods(http.MethodGet)
+	apiRouter.HandleFunc("/device", s.handleGetDevices).Methods(http.MethodGet)
+	apiRouter.HandleFunc("/metrics", s.handleGetMetrics).Methods(http.MethodGet)
+	apiRouter.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 }

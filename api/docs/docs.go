@@ -212,14 +212,12 @@ const docTemplate = `{
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
 	Host:             "",
-	BasePath:         "",
+	BasePath:         "/api/",
 	Schemes:          []string{},
 	Title:            "Beacon API",
 	Description:      "Collects device and metric data from clients",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
-	// LeftDelim:        "{{",
-	// RightDelim:       "}}", // WARN: This is an auto-gen error needs to be checked pre-dep
 }
 
 func init() {
