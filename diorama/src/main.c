@@ -1,3 +1,7 @@
+#include <stdint.h>
+#include <stdbool.h>
+#include <stddef.h>
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
@@ -8,13 +12,10 @@
 #include "config.h"
 #include "button_task.h"
 #include "traffic_light_task.h"
-#include "cJSON.h"
-#include <string.h>     //for handling strings
-#include "esp_system.h" //esp_init funtions esp_err_t
-#include "esp_log.h"    //for showing logs
-#include "nvs_flash.h"  //non volatile storage
-#include "lwip/err.h"   //light weight ip packets error handling
-#include "lwip/sys.h"   //system applications for light weight ip apps
+#include "wifi_handler.h"
+#include "nvs_flash.h"
+#include "esp_event.h"
+#include "esp_netif.h" // For esp_netif functions
 
 QueueHandle_t event_queue;
 SemaphoreHandle_t button_semaphore;
@@ -23,8 +24,10 @@ TaskHandle_t traffic_light_task_handle;
 
 void app_main(void)
 {
+    // Initialize NVS
     esp_err_t ret = nvs_flash_init();
-    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND)
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES ||
+        ret == ESP_ERR_NVS_NEW_VERSION_FOUND)
     {
         ESP_ERROR_CHECK(nvs_flash_erase());
         ret = nvs_flash_init();
@@ -32,6 +35,14 @@ void app_main(void)
     ESP_ERROR_CHECK(ret);
 
     ESP_LOGI("APP_MAIN", "Starting application");
+
+    // Initialize TCP/IP stack and event loop
+    ESP_ERROR_CHECK(esp_netif_init());
+    ESP_ERROR_CHECK(esp_event_loop_create_default());
+
+    // Initialize Wi-Fi
+    wifi_init_sta();
+    wait_for_wifi_connection();
 
     // Initialize GPIOs
     esp_rom_gpio_pad_select_gpio(CAR_GREEN_PIN);
@@ -67,7 +78,7 @@ void app_main(void)
         return;
     }
 
-    // Create tasks with adjusted stack sizes and priorities
+    // Create tasks
     if (xTaskCreate(traffic_light_task, "Traffic Light Task", TRAFFIC_LIGHT_TASK_STACK_SIZE, NULL, TRAFFIC_LIGHT_TASK_PRIORITY, &traffic_light_task_handle) != pdPASS)
     {
         ESP_LOGE("APP_MAIN", "Failed to create Traffic Light Task");
@@ -78,13 +89,7 @@ void app_main(void)
         ESP_LOGE("APP_MAIN", "Failed to create Button Task");
     }
 
-    // Initial traffic light state
-    gpio_set_level(CAR_GREEN_PIN, 1);
-    gpio_set_level(CAR_YELLOW_PIN, 0);
-    gpio_set_level(CAR_RED_PIN, 0);
-    gpio_set_level(PED_GREEN_PIN, 0);
-    gpio_set_level(PED_RED_PIN, 1);
-    ESP_LOGI("APP_MAIN", "Initial traffic light state set");
+    ESP_LOGI("APP_MAIN", "Application setup complete");
 
     // Delete this task if no longer needed
     vTaskDelete(NULL);

@@ -1,16 +1,17 @@
+#include <stdint.h>
+#include <stdbool.h>
+#include <stddef.h>
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "freertos/queue.h"
 #include "freertos/semphr.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
 #include "config.h"
 #include "button_task.h"
-#include "cJSON.h"
 
 extern QueueHandle_t event_queue;
 extern SemaphoreHandle_t button_semaphore;
-extern TaskHandle_t button_task_handle;
 
 static void IRAM_ATTR button_isr_handler(void *arg)
 {
