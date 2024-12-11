@@ -124,6 +124,8 @@ func (s *Server) setupRoutes() {
 
 	s.router.HandleFunc("/", s.handleDashboardView).Methods(http.MethodGet)
 
+	s.router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+
 	// WARN: Silence favicon warnings
 	s.router.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
