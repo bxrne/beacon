@@ -4,9 +4,10 @@ WORKDIR /app
 
 RUN apk add --no-cache git make
 
-COPY go.mod  ./
+COPY go.mod .
+COPY go.sum .
+
 RUN go mod download
-RUN go mod tidy
 
 COPY . .
 
