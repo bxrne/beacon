@@ -7,16 +7,23 @@ level = "debug"
 
 [server]
 port = 3000
-shutdown_timeout = 10 # 10 seconds for when the server is shutting down
-read_timeout = 5 # 5 seconds for when the server is reading
-write_timeout = 10 # 10 seconds for when the server is writing
-idle_timeout = 120 # 2 minutes for when the server is idle
+shutdown_timeout = 10   # 10 seconds for when the server is shutting down
+read_timeout = 5        # 5 seconds for when the server is reading
+write_timeout = 10      # 10 seconds for when the server is writing
+idle_timeout = 120      # 2 minutes for when the server is idle
 allowed_origins = ["*"]
 cache_ttl = 60
 
 [database]
-dsn = "test.db"
+dsn = "/data/core.db"
 
 [metrics]
-types = ["cpu_usage", "disk_usage", "uptime", "traffic_light", "crossing_light", "crossing_button"]
+types = [
+  "cpu_usage",
+  "disk_usage",
+  "uptime",
+  "traffic_light",
+  "crossing_light",
+  "crossing_button",
+]
 units = ["percent", "seconds", "color", "bool"]
