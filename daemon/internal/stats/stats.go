@@ -3,7 +3,7 @@ package stats
 import (
 	"fmt"
 
-	"github.com/bxrne/beacon/api/pkg/db"
+	"github.com/bxrne/beacon/web/pkg/db"
 	"gorm.io/gorm"
 )
 

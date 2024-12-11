@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/bxrne/beacon/api/pkg/db"
-	"github.com/bxrne/beacon/api/pkg/metrics"
+	"github.com/bxrne/beacon/web/pkg/db"
+	"github.com/bxrne/beacon/web/pkg/metrics"
 	"gorm.io/gorm"
 )
 

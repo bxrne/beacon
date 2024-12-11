@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/bxrne/beacon/api/internal/config"
+	"github.com/bxrne/beacon/web/internal/config"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )

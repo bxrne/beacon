@@ -7,12 +7,12 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/bxrne/beacon/api/internal/config"
-	"github.com/bxrne/beacon/api/internal/logger"
-	"github.com/bxrne/beacon/api/pkg/db"
-	"github.com/bxrne/beacon/api/pkg/server"
+	"github.com/bxrne/beacon/web/internal/config"
+	"github.com/bxrne/beacon/web/internal/logger"
+	"github.com/bxrne/beacon/web/pkg/db"
+	"github.com/bxrne/beacon/web/pkg/server"
 
-	_ "github.com/bxrne/beacon/api/docs" // This line is necessary for go-swagger to find your docs
+	_ "github.com/bxrne/beacon/web/docs" // This line is necessary for go-swagger to find your docs
 )
 
 // @title Beacon API

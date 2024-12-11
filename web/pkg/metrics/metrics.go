@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	models "github.com/bxrne/beacon/api/pkg/db"
+	models "github.com/bxrne/beacon/web/pkg/db"
 	"gorm.io/gorm"
 )
 
