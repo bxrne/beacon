@@ -17,6 +17,9 @@ FROM alpine:latest
 
 WORKDIR /app
 
+# Create the /data directory for the SQLite database
+RUN mkdir -p /data
+
 COPY --from=builder /app/beacon-web .
 COPY --from=builder /app/config.toml .
 
