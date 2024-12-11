@@ -1,4 +1,4 @@
-name: API CI
+name: Web CI
 on:
   push:
     branches:
@@ -21,16 +21,16 @@ jobs:
           go-version: ${{ matrix.go-version }}
       - name: Install dependencies
         run: go mod download
-        working-directory: api/
+        working-directory: web/
       - name: Tidy dependencies
         run: go mod tidy
-        working-directory: api/
+        working-directory: web/
       - name: Build the project
         run: go build -v ./...
-        working-directory: api/
+        working-directory: web/
       - name: Run tests
         run: go test ./pkg/... -v -coverprofile=coverage.out
-        working-directory: api/
+        working-directory: web/
       - name: Upload results to Codecov
         uses: codecov/codecov-action@v4
         with:
