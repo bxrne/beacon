@@ -4,10 +4,10 @@ Monitoring and analysing multiple device metrics from a cloud dashboard.
 
 | Deliverable | Stack | Function | Status |
 | --- | --- | --- | --- |
-| [daemon](daemon/) | Go 1.23 | Collect device metrics and send to api | [![Daemon CI](https://github.com/bxrne/beacon/actions/workflows/daemon-ci.yaml/badge.svg)](https://github.com/bxrne/beacon/actions/workflows/daemon-ci.yaml) |
-| [api](api/) | Go 1.23 | Receive metrics from daemons and store | [![CI](https://github.com/bxrne/beacon/actions/workflows/api-ci.yaml/badge.svg)](https://github.com/bxrne/beacon/actions/workflows/api-ci.yaml) | 
+| [daemon](daemon/) | Go 1.23 | Collect device metrics and send to web | [![Daemon CI](https://github.com/bxrne/beacon/actions/workflows/daemon-ci.yaml/badge.svg)](https://github.com/bxrne/beacon/actions/workflows/daemon-ci.yaml) |
+| [web](web/) | Go 1.23 | Receive metrics from daemons and store | [![CI](https://github.com/bxrne/beacon/actions/workflows/web-ci.yaml/badge.svg)](https://github.com/bxrne/beacon/actions/workflows/web-ci.yaml) | 
 | [diorama](diorama/) | C, FreeRTOS | Interactive diorama of pedestrian crossing | [![PlatformIO CI](https://github.com/bxrne/beacon/actions/workflows/diorama-ci.yaml/badge.svg)](https://github.com/bxrne/beacon/actions/workflows/diorama-ci.yaml) |
-| [dashboard](dashboard/) | React | (TODO) Display metrics from api | TODO |
+
 
 ## Usage
 
@@ -22,10 +22,10 @@ go run ./cmd
 go test ./...
 ```
 
-### API
+### web
 
 ```sh
-cd api
+cd web
 swag init -g ./cmd/main.go # Generate swagger docs 
 go mod download
 
@@ -47,12 +47,12 @@ go build -o beacon-daemon ./cmd
 TODO: Add systemd service file
 ```
 
-### API
+### web
 
-API is deployed via `Dockerfile` using [fly](https://fly.io/) which is configured [here](api/fly.toml).
+web is deployed via `Dockerfile` using [fly](https://fly.io/) which is configured [here](web/fly.toml).
 
 ```sh
-cd api
+cd web
 fly auth login
 fly deploy
 ```

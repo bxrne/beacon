@@ -1,0 +1,37 @@
+name: Web CI
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version: [1.23.x]
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Install dependencies
+        run: go mod download
+        working-directory: web/
+      - name: Tidy dependencies
+        run: go mod tidy
+        working-directory: web/
+      - name: Build the project
+        run: go build -v ./...
+        working-directory: web/
+      - name: Run tests
+        run: go test ./pkg/... -v -coverprofile=coverage.out
+        working-directory: web/
+      - name: Upload results to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
