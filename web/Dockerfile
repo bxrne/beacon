@@ -7,7 +7,7 @@ RUN apk add --no-cache git make gcc musl-dev
 COPY go.mod go.sum ./
 
 RUN go mod download
- ts ts
+
 COPY . .
 
 RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o beacon-web ./cmd
