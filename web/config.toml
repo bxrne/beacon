@@ -15,7 +15,7 @@ allowed_origins = ["*"]
 cache_ttl = 60
 
 [database]
-dsn = "/data/core.db"
+dsn = "core.db"
 
 [metrics]
 types = [

@@ -1,7 +1,7 @@
-{{ define "title" }}Dashboard{{ end }}
+{{ define "title" }}Charts{{ end }}
 
 {{ define "content" }}
-<h1 class="mt-5">Dashboard</h1>
+<h1 class="mt-5">Charts</h1>
 <hr />
 <label for="deviceSelect">Select a device:</label>
 <select id="deviceSelect">
@@ -16,21 +16,5 @@
     <option value="10000">10 seconds</option>
     <option value="30000">30 seconds</option>
 </select>
-<table class="table mt-3">
-    <thead>
-        <tr>
-            <th>Type</th>
-            <th>Value</th>
-            <th>Unit</th>
-            <th>Recorded At</th>
-        </tr>
-    </thead>
-    <tbody id="metrics">
-        <!-- Metrics will be loaded here -->
-    </tbody>
-</table>
-<nav>
-    <ul id="pagination" class="pagination"></ul>
-</nav>
+<div id="gaugeContainer" class="charts-container"></div>
 {{ end }}
-<script src="/static/js/dashboard.js"></script>
