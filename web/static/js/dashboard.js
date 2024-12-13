@@ -4,6 +4,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 	const metricsTable = document.getElementById("metrics");
 	const pagination = document.getElementById("pagination");
 	const metricTypeFilter = document.getElementById("metricTypeFilter");
+	const sortMetrics = document.getElementById("sortMetrics");
+	const sortLabel = document.getElementById("sortLabel");
 	let refreshIntervalId = null;
 
 	async function fetchDevices() {
@@ -19,8 +21,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 	async function fetchMetrics(deviceID, page = 1) {
 		const metricType = metricTypeFilter.value;
+		const sort = sortMetrics.value;
 		const response = await fetch(
-			`/api/metrics?page=${page}&type=${metricType}`,
+			`/api/metrics?page=${page}&type=${metricType}&sort=${sort}`,
 			{
 				headers: {
 					"X-DeviceID": deviceID,
@@ -101,8 +104,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 				fetchMetrics(deviceID);
 			}, interval);
 			pagination.style.display = "none"; // Hide pagination
+			sortMetrics.style.display = "none"; // Hide sorting
+			sortLabel.style.display = "none"; // Hide sorting label
 		} else {
 			pagination.style.display = ""; // Show pagination
+			sortMetrics.style.display = ""; // Show sorting
+			sortLabel.style.display = ""; // Show sorting label
 		}
 	}
 
@@ -132,6 +139,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 	});
 
 	metricTypeFilter.addEventListener("input", function () {
+		const deviceID = deviceSelect.value;
+		if (deviceID) {
+			fetchMetrics(deviceID);
+		}
+	});
+
+	sortMetrics.addEventListener("change", function () {
 		const deviceID = deviceSelect.value;
 		if (deviceID) {
 			fetchMetrics(deviceID);

@@ -14,4 +14,11 @@
 </select>
 <label for="metricTypeFilter">Filter by Metric Type:</label>
 <input type="text" id="metricTypeFilter" placeholder="Enter metric type">
+<label for="sortMetrics" id="sortLabel" style="display: none;">Sort by:</label>
+<select id="sortMetrics" style="display: none;">
+    <option value="recorded_at desc">Date (Newest First)</option>
+    <option value="recorded_at asc">Date (Oldest First)</option>
+    <option value="value desc">Value (Highest First)</option>
+    <option value="value asc">Value (Lowest First)</option>
+</select>
 {{ end }}
