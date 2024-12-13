@@ -139,7 +139,4 @@ func (s *Server) setupRoutes() {
 	apiRouter.HandleFunc("/metric", s.handleGetMetric).Methods(http.MethodGet)
 	apiRouter.HandleFunc("/device", s.handleGetDevices).Methods(http.MethodGet)
 	apiRouter.HandleFunc("/metrics", s.handleGetMetrics).Methods(http.MethodGet)
-
-	// SSE endpoint for metrics streaming
-	s.router.HandleFunc("/metrics/stream", s.handleMetricsStream)
 }

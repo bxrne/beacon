@@ -1,17 +1,32 @@
 document.addEventListener("DOMContentLoaded", async () => {
 	const deviceSelect = document.getElementById("deviceSelect");
 	const gaugeContainer = document.getElementById("gaugeContainer");
-	let eventSource = null;
 
 	async function fetchDevices() {
 		const response = await fetch("/api/device");
 		const devices = await response.json();
-		devices.forEach((device) => {
+
+		// Clear existing options
+		deviceSelect.innerHTML = '<option value="">Select a device</option>';
+
+		// Use a Set to avoid duplicate devices
+		const uniqueDevices = new Set(devices);
+		uniqueDevices.forEach((device) => {
 			const option = document.createElement("option");
 			option.value = device;
 			option.textContent = device;
 			deviceSelect.appendChild(option);
 		});
+	}
+
+	async function fetchMetrics(deviceID) {
+		const response = await fetch(`/api/metrics`, {
+			headers: {
+				"X-DeviceID": deviceID,
+			},
+		});
+		const metrics = await response.json();
+		initializeGauges(metrics);
 	}
 
 	function initializeGauges(metrics) {
@@ -29,35 +44,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 		});
 	}
 
-	function startEventSource(deviceID) {
-		if (eventSource) {
-			eventSource.close();
-		}
-		eventSource = new EventSource(`/metrics/stream?deviceID=${deviceID}`);
-
-		eventSource.onmessage = function (event) {
-			const metrics = JSON.parse(event.data);
-			initializeGauges(metrics);
-		};
-
-		eventSource.onerror = function () {
-			console.error("EventSource failed. Reconnecting...");
-			eventSource.close();
-			setTimeout(() => startEventSource(deviceID), 5000);
-		};
-	}
-
 	await fetchDevices();
 
 	deviceSelect.addEventListener("change", function () {
 		const deviceID = this.value;
 		if (deviceID) {
-			startEventSource(deviceID);
+			fetchMetrics(deviceID);
 		} else {
 			gaugeContainer.innerHTML = "";
-			if (eventSource) {
-				eventSource.close();
-			}
 		}
 	});
 });
