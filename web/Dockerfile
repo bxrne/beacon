@@ -22,6 +22,8 @@ RUN mkdir -p /data
 
 COPY --from=builder /app/beacon-web .
 COPY --from=builder /app/config.toml .
+COPY --from=builder /app/templates ./templates
+COPY --from=builder /app/static ./static
 
 EXPOSE 3000
 ENTRYPOINT ["./beacon-web"]
