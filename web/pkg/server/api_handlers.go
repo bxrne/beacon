@@ -215,6 +215,20 @@ func (s *Server) handleGetMetrics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Filter for percent-based metrics and keep only the latest for each type
+	latestMetrics := make(map[string]db.Metric)
+	for _, metric := range metrics {
+		if metric.Unit.Name == "percent" {
+			latestMetrics[metric.Type.Name] = metric
+		}
+	}
+
+	// Convert map to slice
+	var latestMetricsSlice []db.Metric
+	for _, metric := range latestMetrics {
+		latestMetricsSlice = append(latestMetricsSlice, metric)
+	}
+
 	// Get total count for pagination
 	var totalRecords int64
 	countQuery := s.db.Model(&db.Metric{}).Where("device_id = ?", device.ID)
@@ -228,7 +242,7 @@ func (s *Server) handleGetMetrics(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := map[string]interface{}{
-		"metrics":      metrics,
+		"metrics":      latestMetricsSlice,
 		"totalRecords": totalRecords,
 		"currentPage":  page,
 		"totalPages":   (totalRecords + int64(limit) - 1) / int64(limit),

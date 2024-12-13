@@ -1,6 +1,8 @@
 document.addEventListener("DOMContentLoaded", async () => {
 	const deviceSelect = document.getElementById("deviceSelect");
 	const gaugeContainer = document.getElementById("gaugeContainer");
+	const metricTypeFilter = document.getElementById("metricTypeFilter");
+	let refreshIntervalId = null;
 
 	async function fetchDevices() {
 		const response = await fetch("/api/device");
@@ -27,25 +29,52 @@ document.addEventListener("DOMContentLoaded", async () => {
 		});
 		const data = await response.json();
 		if (data && Array.isArray(data.metrics)) {
-			initializeGauges(data.metrics);
+			updateGauges(data.metrics);
 		} else {
 			console.error("Expected metrics to be an array", data);
 		}
 	}
 
-	function initializeGauges(metrics) {
+	function updateGauges(metrics) {
 		gaugeContainer.innerHTML = "";
+		const latestMetrics = {};
 		metrics.forEach((metric) => {
 			if (metric.Unit && metric.Unit.Name === "percent") {
-				const gauge = document.createElement("div");
-				gauge.className = "gauge";
-				gauge.innerHTML = `
-					<div class="gauge-value" style="width: ${metric.Value}%;">${metric.Value}%</div>
-					<div class="gauge-label">${metric.Type ? metric.Type.Name : ""}</div>
-				`;
-				gaugeContainer.appendChild(gauge);
+				latestMetrics[metric.Type.Name] = metric;
 			}
 		});
+		Object.values(latestMetrics).forEach((metric) => {
+			const gauge = document.createElement("div");
+			gauge.className = "gauge";
+			gauge.innerHTML = `
+				<div class="gauge-value" style="width: ${metric.Value}%;">${metric.Value}%</div>
+				<div class="gauge-label">${metric.Type ? metric.Type.Name : ""}</div>
+			`;
+			gaugeContainer.appendChild(gauge);
+		});
+	}
+
+	function filterGauges() {
+		const filterText = metricTypeFilter.value.toLowerCase();
+		const gauges = gaugeContainer.getElementsByClassName("gauge");
+		for (let gauge of gauges) {
+			const label = gauge
+				.getElementsByClassName("gauge-label")[0]
+				.textContent.toLowerCase();
+			if (label.includes(filterText)) {
+				gauge.style.display = "";
+			} else {
+				gauge.style.display = "none";
+			}
+		}
+	}
+
+	function startAutoRefresh(deviceID) {
+		const interval = 5000; // 5 seconds
+		clearInterval(refreshIntervalId);
+		refreshIntervalId = setInterval(() => {
+			fetchMetrics(deviceID);
+		}, interval);
 	}
 
 	await fetchDevices();
@@ -54,8 +83,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 		const deviceID = this.value;
 		if (deviceID) {
 			fetchMetrics(deviceID);
+			startAutoRefresh(deviceID);
 		} else {
 			gaugeContainer.innerHTML = "";
+			clearInterval(refreshIntervalId);
 		}
 	});
+
+	metricTypeFilter.addEventListener("input", filterGauges);
 });
