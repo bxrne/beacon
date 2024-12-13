@@ -25,8 +25,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 				"X-DeviceID": deviceID,
 			},
 		});
-		const metrics = await response.json();
-		initializeGauges(metrics);
+		const data = await response.json();
+		if (data && Array.isArray(data.metrics)) {
+			initializeGauges(data.metrics);
+		} else {
+			console.error("Expected metrics to be an array", data);
+		}
 	}
 
 	function initializeGauges(metrics) {
