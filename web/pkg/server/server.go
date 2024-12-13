@@ -123,8 +123,10 @@ func (s *Server) setupRoutes() {
 	s.router.Use(s.loggingMiddleware)
 
 	s.router.HandleFunc("/", s.handleDashboardView).Methods(http.MethodGet)
+	s.router.HandleFunc("/charts", s.handleChartsView).Methods(http.MethodGet)
 
 	s.router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
+	s.router.PathPrefix("/docs/").Handler(httpSwagger.WrapHandler)
 
 	// WARN: Silence favicon warnings
 	s.router.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
@@ -137,5 +139,4 @@ func (s *Server) setupRoutes() {
 	apiRouter.HandleFunc("/metric", s.handleGetMetric).Methods(http.MethodGet)
 	apiRouter.HandleFunc("/device", s.handleGetDevices).Methods(http.MethodGet)
 	apiRouter.HandleFunc("/metrics", s.handleGetMetrics).Methods(http.MethodGet)
-	apiRouter.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 }

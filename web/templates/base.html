@@ -1,0 +1,31 @@
+{{ define "base" }}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ block "title" . }}{{ end }}</title>
+    <link rel="stylesheet" href="https://unpkg.com/milligram@1.4.1/dist/milligram.min.css">
+    <link rel="stylesheet" href="/static/css/main.css">
+    <script src="https://unpkg.com/htmx.org@1.6.1"></script>
+    {{ block "head" . }}{{ end }}
+</head>
+
+<body>
+    <nav class="nav-header">
+        <a href="#" class="brand">Beacon</a>
+        <a href="/" class="home-link">Dashboard</a>
+        <a href="/charts" class="home-link">Charts</a>
+        <a href="/docs" class="home-link">Docs</a>
+    </nav>
+    <div class="container">
+        {{ block "content" . }}{{ end }}
+    </div>
+    {{ block "scripts" . }}
+    <!-- Scripts specific to each page will be included here -->
+    {{ end }}
+</body>
+
+</html>
+{{ end }}

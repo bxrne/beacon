@@ -3,6 +3,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 	const updateIntervalSelect = document.getElementById("updateInterval");
 	const metricsTable = document.getElementById("metrics");
 	const pagination = document.getElementById("pagination");
+	const metricTypeFilter = document.getElementById("metricTypeFilter");
+	const sortMetrics = document.getElementById("sortMetrics");
+	const sortLabel = document.getElementById("sortLabel");
 	let refreshIntervalId = null;
 
 	async function fetchDevices() {
@@ -17,23 +20,30 @@ document.addEventListener("DOMContentLoaded", async () => {
 	}
 
 	async function fetchMetrics(deviceID, page = 1) {
-		const response = await fetch(`/api/metrics?page=${page}`, {
-			headers: {
-				"X-DeviceID": deviceID,
-			},
-		});
+		const metricType = metricTypeFilter.value;
+		const sort = sortMetrics.value;
+		const response = await fetch(
+			`/api/metrics?page=${page}&type=${metricType}&sort=${sort}`,
+			{
+				headers: {
+					"X-DeviceID": deviceID,
+				},
+			}
+		);
 		const data = await response.json();
 		metricsTable.innerHTML = "";
-		data.metrics.forEach((metric) => {
-			const row = document.createElement("tr");
-			row.innerHTML = `
+		if (data.metrics) {
+			data.metrics.forEach((metric) => {
+				const row = document.createElement("tr");
+				row.innerHTML = `
                 <td>${metric.Type ? metric.Type.Name : ""}</td>
                 <td>${metric.Value}</td>
                 <td>${metric.Unit ? metric.Unit.Name : ""}</td>
                 <td>${new Date(metric.RecordedAt).toLocaleString()}</td>
             `;
-			metricsTable.appendChild(row);
-		});
+				metricsTable.appendChild(row);
+			});
+		}
 		renderPagination(data.totalPages, data.currentPage);
 	}
 
@@ -93,6 +103,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 			refreshIntervalId = setInterval(() => {
 				fetchMetrics(deviceID);
 			}, interval);
+			pagination.style.display = "none"; // Hide pagination
+			sortMetrics.style.display = "none"; // Hide sorting
+			sortLabel.style.display = "none"; // Hide sorting label
+		} else {
+			pagination.style.display = ""; // Show pagination
+			sortMetrics.style.display = ""; // Show sorting
+			sortLabel.style.display = ""; // Show sorting label
 		}
 	}
 
@@ -118,6 +135,20 @@ document.addEventListener("DOMContentLoaded", async () => {
 		const deviceID = deviceSelect.value;
 		if (deviceID) {
 			startAutoRefresh(deviceID);
+		}
+	});
+
+	metricTypeFilter.addEventListener("input", function () {
+		const deviceID = deviceSelect.value;
+		if (deviceID) {
+			fetchMetrics(deviceID);
+		}
+	});
+
+	sortMetrics.addEventListener("change", function () {
+		const deviceID = deviceSelect.value;
+		if (deviceID) {
+			fetchMetrics(deviceID);
 		}
 	});
 

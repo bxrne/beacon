@@ -1,0 +1,12 @@
+{{ define "title" }}Charts{{ end }}
+
+{{ define "content" }}
+<h1 class="mt-5">Charts</h1>
+<hr />
+{{ template "device_selection" . }}
+<div id="gaugeContainer" class="charts-container"></div>
+{{ end }}
+
+{{ define "scripts" }}
+<script src="/static/js/chart.js"></script>
+{{ end }}

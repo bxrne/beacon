@@ -1,51 +1,27 @@
-<!DOCTYPE html>
-<html lang="en">
+{{ define "title" }}Dashboard{{ end }}
 
-<head>
-    <meta charset="UTF-8">
-    <title>Metrics Dashboard</title>
-    <link rel="stylesheet" href="https://unpkg.com/milligram@1.4.1/dist/milligram.min.css">
-    <script src="https://unpkg.com/htmx.org@1.6.1"></script>
-</head>
+{{ define "content" }}
+<h1 class="mt-5">Dashboard</h1>
+<hr />
+{{ template "device_selection" . }}
+<table class="table mt-3">
+    <thead>
+        <tr>
+            <th>Type</th>
+            <th>Value</th>
+            <th>Unit</th>
+            <th>Recorded At</th>
+        </tr>
+    </thead>
+    <tbody id="metrics">
+        <!-- Metrics will be loaded here -->
+    </tbody>
+</table>
+<nav>
+    <ul id="pagination" class="pagination"></ul>
+</nav>
+{{ end }}
 
-<body>
-    <div class="container">
-        <h1 class="mt-5">beacon</h1>
-        <hr />
-        <label for="deviceSelect">Select a device:</label>
-        <select id="deviceSelect">
-            <option value="">Select a device</option>
-            <!-- Options will be populated dynamically -->
-        </select>
-        <label for="updateInterval">Update Interval:</label>
-        <select id="updateInterval">
-            <option value="0" selected>No update</option>
-            <option value="1000">1 second</option>
-            <option value="5000">5 seconds</option>
-            <option value="10000">10 seconds</option>
-            <option value="30000">30 seconds</option>
-        </select>
-        <table class="table mt-3">
-            <thead>
-                <tr>
-                    <th>Type</th>
-                    <th>Value</th>
-                    <th>Unit</th>
-                    <th>Recorded At</th>
-                </tr>
-            </thead>
-            <tbody id="metrics">
-                <!-- Metrics will be loaded here -->
-            </tbody>
-        </table>
-        <nav>
-            <ul id="pagination" class="pagination" style="display: flex; list-style: none; padding: 0; justify-content: center; gap: 10px;"></ul>
-                <!-- Pagination links will be dynamically generated here -->
-            </ul>
-        </nav>
-    </div>
-    <!-- Remove inline script and include external JavaScript file -->
-    <script src="/static/js/dashboard.js"></script>
-</body>
-
-</html>
+{{ define "scripts" }}
+<script src="/static/js/dashboard.js"></script>
+{{ end }}

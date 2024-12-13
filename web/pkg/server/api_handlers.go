@@ -195,25 +195,54 @@ func (s *Server) handleGetMetrics(w http.ResponseWriter, r *http.Request) {
 	if s := r.URL.Query().Get("sort"); s != "" {
 		sort = s
 	}
+	metricType := r.URL.Query().Get("type")
 
 	offset := (page - 1) * limit
 
-	if err := s.db.Preload("Type").Preload("Unit").Where("device_id = ?", device.ID).Order(sort).Limit(limit).Offset(offset).Find(&metrics).Error; err != nil {
+	query := s.db.Preload("Type").Preload("Unit").Where("device_id = ?", device.ID).Order(sort).Limit(limit).Offset(offset)
+	var metricTypeIDs []uint
+	if metricType != "" {
+		if err := s.db.Model(&db.MetricType{}).Select("id").Where("name LIKE ?", "%"+metricType+"%").Scan(&metricTypeIDs).Error; err != nil {
+			s.logger.Errorf("handleGetMetrics: failed to get metric type IDs: %s", err)
+			s.respondJSON(w, http.StatusInternalServerError, errorResponse{Error: "failed to get metric type IDs"})
+			return
+		}
+		query = query.Where("type_id IN ?", metricTypeIDs)
+	}
+	if err := query.Find(&metrics).Error; err != nil {
 		s.logger.Errorf("handleGetMetrics: failed to get metrics: %s", err)
 		s.respondJSON(w, http.StatusInternalServerError, errorResponse{Error: "failed to get metrics"})
 		return
 	}
 
+	// Filter for percent-based metrics and keep only the latest for each type
+	latestMetrics := make(map[string]db.Metric)
+	for _, metric := range metrics {
+		if metric.Unit.Name == "percent" {
+			latestMetrics[metric.Type.Name] = metric
+		}
+	}
+
+	// Convert map to slice
+	var latestMetricsSlice []db.Metric
+	for _, metric := range latestMetrics {
+		latestMetricsSlice = append(latestMetricsSlice, metric)
+	}
+
 	// Get total count for pagination
 	var totalRecords int64
-	if err := s.db.Model(&db.Metric{}).Where("device_id = ?", device.ID).Count(&totalRecords).Error; err != nil {
+	countQuery := s.db.Model(&db.Metric{}).Where("device_id = ?", device.ID)
+	if metricType != "" {
+		countQuery = countQuery.Where("type_id IN ?", metricTypeIDs)
+	}
+	if err := countQuery.Count(&totalRecords).Error; err != nil {
 		s.logger.Errorf("handleGetMetrics: failed to get total count: %s", err)
 		s.respondJSON(w, http.StatusInternalServerError, errorResponse{Error: "failed to get total count"})
 		return
 	}
 
 	response := map[string]interface{}{
-		"metrics":      metrics,
+		"metrics":      latestMetricsSlice,
 		"totalRecords": totalRecords,
 		"currentPage":  page,
 		"totalPages":   (totalRecords + int64(limit) - 1) / int64(limit),
