@@ -93,6 +93,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 			refreshIntervalId = setInterval(() => {
 				fetchMetrics(deviceID);
 			}, interval);
+			pagination.style.display = "none"; // Hide pagination
+		} else {
+			pagination.style.display = ""; // Show pagination
 		}
 	}
 
