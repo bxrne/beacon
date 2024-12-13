@@ -39,9 +39,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 		gaugeContainer.innerHTML = "";
 		const latestMetrics = {};
 		metrics.forEach((metric) => {
-			if (metric.Unit && metric.Unit.Name === "percent") {
-				latestMetrics[metric.Type.Name] = metric;
-			}
+			latestMetrics[metric.Type.Name] = metric;
 		});
 		Object.values(latestMetrics).forEach((metric) => {
 			const gauge = document.createElement("div");

@@ -218,9 +218,7 @@ func (s *Server) handleGetMetrics(w http.ResponseWriter, r *http.Request) {
 	// Filter for percent-based metrics and keep only the latest for each type
 	latestMetrics := make(map[string]db.Metric)
 	for _, metric := range metrics {
-		if metric.Unit.Name == "percent" {
-			latestMetrics[metric.Type.Name] = metric
-		}
+		latestMetrics[metric.Type.Name] = metric
 	}
 
 	// Convert map to slice
