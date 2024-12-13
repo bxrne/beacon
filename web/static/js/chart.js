@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 	}
 
 	async function fetchMetrics(deviceID) {
-		const response = await fetch(`/api/metrics`, {
+		const response = await fetch(`/api/metrics?view=charts`, {
 			headers: {
 				"X-DeviceID": deviceID,
 			},
