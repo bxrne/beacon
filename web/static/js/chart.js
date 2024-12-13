@@ -1,63 +1,63 @@
-import {
-	fetchDevices,
-	populateDeviceSelect,
-	fetchMetricsForDevice,
-} from "./utils.js";
-
 document.addEventListener("DOMContentLoaded", async () => {
 	const deviceSelect = document.getElementById("deviceSelect");
-	const updateIntervalSelect = document.getElementById("updateInterval");
 	const gaugeContainer = document.getElementById("gaugeContainer");
-	let refreshIntervalId = null;
+	let eventSource = null;
 
-	async function initializeGauges(deviceID) {
-		const metrics = await fetchMetricsForDevice(deviceID);
+	async function fetchDevices() {
+		const response = await fetch("/api/device");
+		const devices = await response.json();
+		devices.forEach((device) => {
+			const option = document.createElement("option");
+			option.value = device;
+			option.textContent = device;
+			deviceSelect.appendChild(option);
+		});
+	}
+
+	function initializeGauges(metrics) {
 		gaugeContainer.innerHTML = "";
 		metrics.forEach((metric) => {
-			if (metric.Unit.Name === "percent") {
+			if (metric.Unit && metric.Unit.Name === "percent") {
 				const gauge = document.createElement("div");
 				gauge.className = "gauge";
 				gauge.innerHTML = `
 					<div class="gauge-value" style="width: ${metric.Value}%;">${metric.Value}%</div>
-					<div class="gauge-label">${metric.Type.Name}</div>
+					<div class="gauge-label">${metric.Type ? metric.Type.Name : ""}</div>
 				`;
 				gaugeContainer.appendChild(gauge);
 			}
 		});
 	}
 
-	function startAutoRefresh(deviceID) {
-		const interval = parseInt(updateIntervalSelect.value);
-		clearInterval(refreshIntervalId);
-		if (interval > 0) {
-			refreshIntervalId = setInterval(() => {
-				initializeGauges(deviceID);
-			}, interval);
+	function startEventSource(deviceID) {
+		if (eventSource) {
+			eventSource.close();
 		}
+		eventSource = new EventSource(`/metrics/stream?deviceID=${deviceID}`);
+
+		eventSource.onmessage = function (event) {
+			const metrics = JSON.parse(event.data);
+			initializeGauges(metrics);
+		};
+
+		eventSource.onerror = function () {
+			console.error("EventSource failed. Reconnecting...");
+			eventSource.close();
+			setTimeout(() => startEventSource(deviceID), 5000);
+		};
 	}
 
-	await fetchDevices().then((devices) =>
-		populateDeviceSelect(deviceSelect, devices)
-	);
+	await fetchDevices();
 
 	deviceSelect.addEventListener("change", function () {
 		const deviceID = this.value;
 		if (deviceID) {
-			initializeGauges(deviceID);
-			startAutoRefresh(deviceID);
+			startEventSource(deviceID);
 		} else {
 			gaugeContainer.innerHTML = "";
-			clearInterval(refreshIntervalId);
+			if (eventSource) {
+				eventSource.close();
+			}
 		}
 	});
-
-	updateIntervalSelect.addEventListener("change", function () {
-		const deviceID = deviceSelect.value;
-		if (deviceID) {
-			startAutoRefresh(deviceID);
-		}
-	});
-
-	// Set "No update" as the default active option
-	updateIntervalSelect.value = "0";
 });

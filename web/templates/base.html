@@ -12,18 +12,20 @@
     <script src="/static/js/common.js"></script>
     <script src="/static/js/dashboard.js"></script>
     <script src="/static/js/chart.js"></script>
+    {{ block "head" . }}{{ end }}
 </head>
 
 <body>
     <nav class="nav-header">
-        <a href="/" class="home-link">Home</a>
-        <a href="/dashboard" class="home-link">Dashboard</a>
+        <a href="#" class="brand">Beacon</a>
+        <a href="/" class="home-link">Dashboard</a>
         <a href="/charts" class="home-link">Charts</a>
         <a href="/docs" class="home-link">Docs</a>
     </nav>
     <div class="container">
         {{ block "content" . }}{{ end }}
     </div>
+    {{ block "scripts" . }}{{ end }}
 </body>
 
 </html>

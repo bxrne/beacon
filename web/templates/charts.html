@@ -3,18 +3,10 @@
 {{ define "content" }}
 <h1 class="mt-5">Charts</h1>
 <hr />
-<label for="deviceSelect">Select a device:</label>
-<select id="deviceSelect">
-    <option value="">Select a device</option>
-    <!-- Options will be populated dynamically -->
-</select>
-<label for="updateInterval">Update Interval:</label>
-<select id="updateInterval">
-    <option value="0" selected>No update</option>
-    <option value="1000">1 second</option>
-    <option value="5000">5 seconds</option>
-    <option value="10000">10 seconds</option>
-    <option value="30000">30 seconds</option>
-</select>
+{{ template "device_selection" . }}
 <div id="gaugeContainer" class="charts-container"></div>
+{{ end }}
+
+{{ define "scripts" }}
+<script src="/static/js/chart.js"></script>
 {{ end }}
