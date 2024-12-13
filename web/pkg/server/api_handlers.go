@@ -195,10 +195,21 @@ func (s *Server) handleGetMetrics(w http.ResponseWriter, r *http.Request) {
 	if s := r.URL.Query().Get("sort"); s != "" {
 		sort = s
 	}
+	metricType := r.URL.Query().Get("type")
 
 	offset := (page - 1) * limit
 
-	if err := s.db.Preload("Type").Preload("Unit").Where("device_id = ?", device.ID).Order(sort).Limit(limit).Offset(offset).Find(&metrics).Error; err != nil {
+	query := s.db.Preload("Type").Preload("Unit").Where("device_id = ?", device.ID).Order(sort).Limit(limit).Offset(offset)
+	var metricTypeIDs []uint
+	if metricType != "" {
+		if err := s.db.Model(&db.MetricType{}).Select("id").Where("name LIKE ?", "%"+metricType+"%").Scan(&metricTypeIDs).Error; err != nil {
+			s.logger.Errorf("handleGetMetrics: failed to get metric type IDs: %s", err)
+			s.respondJSON(w, http.StatusInternalServerError, errorResponse{Error: "failed to get metric type IDs"})
+			return
+		}
+		query = query.Where("type_id IN ?", metricTypeIDs)
+	}
+	if err := query.Find(&metrics).Error; err != nil {
 		s.logger.Errorf("handleGetMetrics: failed to get metrics: %s", err)
 		s.respondJSON(w, http.StatusInternalServerError, errorResponse{Error: "failed to get metrics"})
 		return
@@ -206,7 +217,11 @@ func (s *Server) handleGetMetrics(w http.ResponseWriter, r *http.Request) {
 
 	// Get total count for pagination
 	var totalRecords int64
-	if err := s.db.Model(&db.Metric{}).Where("device_id = ?", device.ID).Count(&totalRecords).Error; err != nil {
+	countQuery := s.db.Model(&db.Metric{}).Where("device_id = ?", device.ID)
+	if metricType != "" {
+		countQuery = countQuery.Where("type_id IN ?", metricTypeIDs)
+	}
+	if err := countQuery.Count(&totalRecords).Error; err != nil {
 		s.logger.Errorf("handleGetMetrics: failed to get total count: %s", err)
 		s.respondJSON(w, http.StatusInternalServerError, errorResponse{Error: "failed to get total count"})
 		return
