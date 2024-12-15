@@ -27,18 +27,14 @@
 
 #define ESP_INTR_FLAG_DEFAULT 0
 
-// Wi-Fi configuration
-#define WIFI_SSID "WIFI_SSID"
-#define WIFI_PASS "WIFI_PASS"
+// Circular buffer size
+#define CIRCULAR_BUFFER_SIZE 1024
 
-// API configuration
-#define API_URL "http://ENDPOINT:3000/api/metric"
-#define DEVICE_ID "esp-diorama"
-
-// Event types
+// Define event types
 typedef enum
 {
-  EVENT_BUTTON_PRESS
+  EVENT_BUTTON_PRESS,
+  EVENT_REBOOT_COMMAND
 } event_t;
 
 #endif // CONFIG_H

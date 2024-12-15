@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdio.h>
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -12,10 +13,6 @@
 #include "config.h"
 #include "button_task.h"
 #include "traffic_light_task.h"
-#include "wifi_handler.h"
-#include "nvs_flash.h"
-#include "esp_event.h"
-#include "esp_netif.h" // For esp_netif functions
 
 QueueHandle_t event_queue;
 SemaphoreHandle_t button_semaphore;
@@ -24,25 +21,7 @@ TaskHandle_t traffic_light_task_handle;
 
 void app_main(void)
 {
-    // Initialize NVS
-    esp_err_t ret = nvs_flash_init();
-    if (ret == ESP_ERR_NVS_NO_FREE_PAGES ||
-        ret == ESP_ERR_NVS_NEW_VERSION_FOUND)
-    {
-        ESP_ERROR_CHECK(nvs_flash_erase());
-        ret = nvs_flash_init();
-    }
-    ESP_ERROR_CHECK(ret);
-
     ESP_LOGI("APP_MAIN", "Starting application");
-
-    // Initialize TCP/IP stack and event loop
-    ESP_ERROR_CHECK(esp_netif_init());
-    ESP_ERROR_CHECK(esp_event_loop_create_default());
-
-    // Initialize Wi-Fi
-    wifi_init_sta();
-    wait_for_wifi_connection();
 
     // Initialize GPIOs
     esp_rom_gpio_pad_select_gpio(CAR_GREEN_PIN);
