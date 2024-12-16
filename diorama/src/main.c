@@ -11,19 +11,22 @@
 #include "driver/gpio.h"
 #include "esp_log.h"
 #include "config.h"
-#include "button_task.h"
-#include "traffic_light_task.h"
 
-QueueHandle_t event_queue;
-SemaphoreHandle_t button_semaphore;
-TaskHandle_t button_task_handle;
-TaskHandle_t traffic_light_task_handle;
+#define TAG "TRAFFIC_LIGHT"
 
-void app_main(void)
+QueueHandle_t pedestrianRequestQueue;
+SemaphoreHandle_t xPedestrianSemaphore;
+
+void IRAM_ATTR button_isr_handler(void *arg)
 {
-    ESP_LOGI("APP_MAIN", "Starting application");
+    uint32_t button_pressed = 1;
+    xQueueSendFromISR(pedestrianRequestQueue, &button_pressed, NULL);
+}
 
-    // Initialize GPIOs
+void init_gpio(void)
+{
+    ESP_LOGI(TAG, "Initializing GPIOs");
+
     esp_rom_gpio_pad_select_gpio(CAR_GREEN_PIN);
     esp_rom_gpio_pad_select_gpio(CAR_YELLOW_PIN);
     esp_rom_gpio_pad_select_gpio(CAR_RED_PIN);
@@ -38,38 +41,73 @@ void app_main(void)
     gpio_set_direction(PED_RED_PIN, GPIO_MODE_OUTPUT);
     gpio_set_direction(PED_BUTTON_PIN, GPIO_MODE_INPUT);
 
-    gpio_set_pull_mode(PED_BUTTON_PIN, GPIO_PULLUP_ONLY);
-    ESP_LOGI("APP_MAIN", "Button pin configured with pull-up resistor");
+    gpio_set_intr_type(PED_BUTTON_PIN, GPIO_INTR_POSEDGE);
+    gpio_install_isr_service(0);
+    gpio_isr_handler_add(PED_BUTTON_PIN, button_isr_handler, NULL);
 
-    // Create event queue
-    event_queue = xQueueCreate(EVENT_QUEUE_SIZE, sizeof(event_t));
-    if (event_queue == NULL)
+    gpio_set_level(PED_RED_PIN, 1); // Ensure pedestrian light is red by default
+}
+
+void CarLightTask(void *pvParameters)
+{
+    while (true)
     {
-        ESP_LOGE("APP_MAIN", "Failed to create event queue");
-        return;
-    }
+        // Car Green Light
+        gpio_set_level(CAR_GREEN_PIN, 1);
+        ESP_LOGI(TAG, "Car light: GREEN");
+        vTaskDelay(pdMS_TO_TICKS(CAR_GREEN_DURATION));
+        gpio_set_level(CAR_GREEN_PIN, 0);
 
-    // Create button semaphore
-    button_semaphore = xSemaphoreCreateBinary();
-    if (button_semaphore == NULL)
+        // Car Yellow Light
+        gpio_set_level(CAR_YELLOW_PIN, 1);
+        ESP_LOGI(TAG, "Car light: YELLOW");
+        vTaskDelay(pdMS_TO_TICKS(CAR_YELLOW_DURATION));
+        gpio_set_level(CAR_YELLOW_PIN, 0);
+
+        // Car Red Light
+        gpio_set_level(CAR_RED_PIN, 1);
+        ESP_LOGI(TAG, "Car light: RED");
+
+        if (xSemaphoreTake(xPedestrianSemaphore, 0) == pdTRUE)
+        {
+            ESP_LOGI(TAG, "Pedestrian light: GREEN");
+            gpio_set_level(PED_RED_PIN, 0);
+            gpio_set_level(PED_GREEN_PIN, 1);
+            vTaskDelay(pdMS_TO_TICKS(PED_GREEN_DURATION));
+            gpio_set_level(PED_GREEN_PIN, 0);
+            gpio_set_level(PED_RED_PIN, 1);
+            ESP_LOGI(TAG, "Pedestrian light: RED");
+        }
+        else
+        {
+            vTaskDelay(pdMS_TO_TICKS(CAR_RED_DURATION));
+        }
+
+        gpio_set_level(CAR_RED_PIN, 0);
+    }
+}
+
+void PedestrianLightTask(void *pvParameters)
+{
+    uint32_t button_pressed;
+    while (true)
     {
-        ESP_LOGE("APP_MAIN", "Failed to create button semaphore");
-        return;
+        if (xQueueReceive(pedestrianRequestQueue, &button_pressed, portMAX_DELAY))
+        {
+            ESP_LOGI(TAG, "Pedestrian button pressed");
+            // Signal the CarLightTask
+            xSemaphoreGive(xPedestrianSemaphore);
+        }
     }
+}
 
-    // Create tasks
-    if (xTaskCreate(traffic_light_task, "Traffic Light Task", TRAFFIC_LIGHT_TASK_STACK_SIZE, NULL, TRAFFIC_LIGHT_TASK_PRIORITY, &traffic_light_task_handle) != pdPASS)
-    {
-        ESP_LOGE("APP_MAIN", "Failed to create Traffic Light Task");
-    }
+void app_main(void)
+{
+    init_gpio();
 
-    if (xTaskCreate(button_task, "Button Task", BUTTON_TASK_STACK_SIZE, NULL, BUTTON_TASK_PRIORITY, &button_task_handle) != pdPASS)
-    {
-        ESP_LOGE("APP_MAIN", "Failed to create Button Task");
-    }
+    pedestrianRequestQueue = xQueueCreate(10, sizeof(uint32_t));
+    xPedestrianSemaphore = xSemaphoreCreateBinary();
 
-    ESP_LOGI("APP_MAIN", "Application setup complete");
-
-    // Delete this task if no longer needed
-    vTaskDelete(NULL);
+    xTaskCreate(CarLightTask, "CarLightTask", 2048, NULL, 1, NULL);
+    xTaskCreate(PedestrianLightTask, "PedestrianLightTask", 2048, NULL, 1, NULL);
 }
