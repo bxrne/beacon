@@ -1,5 +1,6 @@
 #include <freertos/FreeRTOS.h>
 #include "ped_light.h"
+#include "freertos/task.h"
 #include "freertos/queue.h"
 #include "esp_log.h"
 #include "globals.h"

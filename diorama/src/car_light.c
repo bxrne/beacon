@@ -1,4 +1,4 @@
-#include <freertos/FreeRTOS.h> 
+#include <freertos/FreeRTOS.h>
 #include "car_light.h"
 #include "freertos/task.h"
 #include "freertos/semphr.h"

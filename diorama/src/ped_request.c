@@ -1,4 +1,4 @@
-#include <freertos/FreeRTOS.h> 
+#include <freertos/FreeRTOS.h>
 #include "ped_request.h"
 #include "driver/gpio.h"
 #include "freertos/queue.h"
@@ -13,6 +13,7 @@ void IRAM_ATTR button_isr_handler(void *arg)
 
 void init_ped_request(void)
 {
+  // Initialize pedestrian button GPIO
   esp_rom_gpio_pad_select_gpio(PED_BUTTON_PIN);
   gpio_set_direction(PED_BUTTON_PIN, GPIO_MODE_INPUT);
   gpio_set_intr_type(PED_BUTTON_PIN, GPIO_INTR_POSEDGE);
