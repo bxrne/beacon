@@ -1,6 +1,10 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+// Wi-Fi configuration
+#define WIFI_SSID "SKYWYBGL"
+#define WIFI_PASS "iZzsVpcMbEq4"
+
 // Traffic light GPIO pins and durations
 #define CAR_GREEN_PIN 18
 #define CAR_YELLOW_PIN 19
