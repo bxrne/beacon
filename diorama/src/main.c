@@ -21,6 +21,9 @@
 #include "lwip/sockets.h"
 #include "esp_netif.h"
 #include "tcp_server.h"
+#include "lwip/apps/sntp.h"
+#include "circular_buffer.h"
+#include "metrics.h" // Include for metrics functions
 
 #define TAG "MAIN"
 
@@ -79,6 +82,24 @@ void wifi_init(void)
     ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
     ESP_ERROR_CHECK(esp_wifi_connect());
+
+    // Initialize SNTP
+    sntp_setoperatingmode(SNTP_OPMODE_POLL);
+    sntp_setservername(0, "pool.ntp.org");
+    sntp_init();
+
+    // Wait for time to be set
+    time_t now = 0;
+    struct tm timeinfo = {0};
+    int retry = 0;
+    const int retry_count = 10;
+    while (timeinfo.tm_year < (2016 - 1900) && ++retry < retry_count)
+    {
+        ESP_LOGI(TAG, "Waiting for system time to be set... (%d/%d)", retry, retry_count);
+        vTaskDelay(2000 / portTICK_PERIOD_MS);
+        time(&now);
+        localtime_r(&now, &timeinfo);
+    }
 }
 
 void app_main(void)
@@ -91,9 +112,22 @@ void app_main(void)
     init_gpio();
     init_ped_request();
 
+    // Initialize metrics buffers
+    init_metrics_buffers(10);
+
     xTaskCreate(CarLightTask, "CarLightTask", 2048, NULL, 1, NULL);
     xTaskCreate(PedestrianLightTask, "PedestrianLightTask", 2048, NULL, 1, NULL);
 
     wifi_init();
     xTaskCreate(tcp_server_task, "tcp_server", 4096, NULL, 5, NULL);
+
+    // Update light buffers periodically
+    while (1)
+    {
+        update_light_buffers();
+        vTaskDelay(pdMS_TO_TICKS(1000)); // Update every second
+    }
+
+    // Free metrics buffers
+    free_metrics_buffers();
 }

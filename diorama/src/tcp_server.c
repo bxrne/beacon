@@ -3,7 +3,8 @@
 #include "freertos/task.h"
 #include "lwip/sockets.h"
 #include "esp_log.h"
-#include <string.h> // For strlen and strstr
+#include <string.h>  // For strlen and strstr
+#include "metrics.h" // Include the metrics header
 
 #define TAG "TCP_SERVER"
 
@@ -64,8 +65,30 @@ void tcp_server_task(void *pvParameters)
       continue;
     }
 
+    // Log the received request
+    rx_buffer[len] = '\0'; // Null-terminate the received data
+    ESP_LOGI(TAG, "Received request: %s", rx_buffer);
+
     // Check if the request is a GET request
-    if (strstr(rx_buffer, "GET / ") != NULL)
+    if (strstr(rx_buffer, "GET /metric") != NULL)
+    {
+      // Prepare the response in the custom format
+      char response[128];
+      char payload[128];
+      get_metrics(payload, sizeof(payload)); // Get the metrics
+      uint8_t payload_length = strlen(payload);
+
+      response[0] = 0x02;           // Start Byte
+      response[1] = payload_length; // Length Byte
+      memcpy(&response[2], payload, payload_length);
+      response[2 + payload_length] = 0x03; // End Byte (optional)
+
+      // Log the payload that is about to be sent
+      ESP_LOGI(TAG, "Sending payload: %s", payload);
+
+      send(sock, response, 3 + payload_length, 0); // Send the response
+    }
+    else if (strstr(rx_buffer, "GET / ") != NULL)
     {
       // Prepare the response in the custom format
       char response[128];
@@ -76,6 +99,9 @@ void tcp_server_task(void *pvParameters)
       response[1] = payload_length; // Length Byte
       memcpy(&response[2], payload, payload_length);
       response[2 + payload_length] = 0x03; // End Byte (optional)
+
+      // Log the payload that is about to be sent
+      ESP_LOGI(TAG, "Sending payload: %s", payload);
 
       send(sock, response, 3 + payload_length, 0); // Send the response
     }
@@ -93,9 +119,12 @@ void tcp_server_task(void *pvParameters)
           memcpy(payload, &rx_buffer[2], payload_length);
           payload[payload_length] = '\0';
 
+          // Log the received payload
+          ESP_LOGI(TAG, "Received payload: %s", payload);
+
           // Process the payload
           // For example, log the received payload
-          ESP_LOGI(TAG, "Received payload: %s", payload);
+          ESP_LOGI(TAG, "Processing payload: %s", payload);
 
           // ...additional payload processing...
 
@@ -105,6 +134,9 @@ void tcp_server_task(void *pvParameters)
           response[1] = 3;    // Length Byte (length of "ACK")
           memcpy(&response[2], "ACK", 3);
           response[5] = 0x03; // End Byte (optional)
+
+          // Log the payload that is about to be sent
+          ESP_LOGI(TAG, "Sending payload: ACK");
 
           send(sock, response, 6, 0); // Send the response
         }
