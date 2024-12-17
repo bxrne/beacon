@@ -2,8 +2,8 @@
 #define CONFIG_H
 
 // Wi-Fi configuration
-#define WIFI_SSID "SKYWYBGL"
-#define WIFI_PASS "iZzsVpcMbEq4"
+#define WIFI_SSID "coldspot"
+#define WIFI_PASS "helloworld1"
 
 // Traffic light GPIO pins and durations
 #define CAR_GREEN_PIN 18

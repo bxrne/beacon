@@ -1,5 +1,5 @@
 #include <freertos/FreeRTOS.h>
-#include "car_light.h"
+#include "traffic_light.h"
 #include "freertos/task.h"
 #include "freertos/semphr.h"
 #include "driver/gpio.h"
@@ -7,9 +7,9 @@
 #include "config.h"
 #include "globals.h"
 
-#define TAG "CAR_LIGHT"
+#define TAG "TRAFFIC_LIGHT"
 
-void CarLightTask(void *pvParameters)
+void TrafficLightTask(void *pvParameters)
 {
   while (true)
   {
@@ -29,7 +29,7 @@ void CarLightTask(void *pvParameters)
     gpio_set_level(CAR_RED_PIN, 1);
     ESP_LOGI(TAG, "Car light: RED");
 
-    // Handle pedestrian crossing
+    // Handle pedestrian crossing (ISR gives this)
     if (xSemaphoreTake(xPedestrianSemaphore, 0) == pdTRUE)
     {
       ESP_LOGI(TAG, "Pedestrian light: GREEN");
