@@ -1,7 +1,7 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 
-#include <freertos/FreeRTOS.h> // Add this include
+#include <freertos/FreeRTOS.h>
 #include "freertos/queue.h"
 #include "freertos/semphr.h"
 

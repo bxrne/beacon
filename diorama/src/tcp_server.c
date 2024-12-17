@@ -3,10 +3,11 @@
 #include "freertos/task.h"
 #include "lwip/sockets.h"
 #include "esp_log.h"
-#include <string.h>     // For strlen and strstr
-#include "metrics.h"    // Include the metrics header
-#include "esp_system.h" // Include for esp_restart()
-
+#include <string.h>      // For strlen and strstr
+#include "metrics.h"     // Include the metrics header
+#include "esp_system.h"  // Include for esp_restart()l
+#include "driver/gpio.h" // Include for GPIO functions
+#include "config.h"
 #define TAG "TCP_SERVER"
 
 // Custom Protocol Design:
@@ -183,12 +184,15 @@ void tcp_server_task(void *pvParameters)
           // Log the action
           ESP_LOGI(TAG, "Rebooting device on command.");
 
+          // Introduce a short delay to ensure LEDs turn off
+          vTaskDelay(pdMS_TO_TICKS(100));
+
           // Close the socket before rebooting
           close(sock);
 
           // Reboot the device
           esp_restart();
-        }
+                }
         else
         {
           // Handle unknown commands
@@ -268,7 +272,6 @@ void tcp_server_task(void *pvParameters)
     }
     else
     {
-      // Handle other requests or send a 404 response
       const char *response =
           "HTTP/1.1 404 Not Found\r\n"
           "Content-Type: text/plain\r\n"

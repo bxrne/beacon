@@ -5,7 +5,7 @@
 #include "esp_log.h"
 #include "globals.h"
 #include "config.h"
-#include "driver/gpio.h" // Include for gpio_get_level
+#include "driver/gpio.h"
 #include <time.h>
 #include <sys/time.h>
 #include <stdlib.h>

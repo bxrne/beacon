@@ -1,16 +1,18 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+// NOTE: Duration value is milliseconds
+
 // Wi-Fi configuration
 #define WIFI_SSID "coldspot"
 #define WIFI_PASS "helloworld1"
 
-// Traffic light GPIO pins and durations
+// Car light GPIO pins and durations
 #define CAR_GREEN_PIN 18
 #define CAR_YELLOW_PIN 19
 #define CAR_RED_PIN 21
 
-#define CAR_GREEN_DURATION 5000 // Milliseconds
+#define CAR_GREEN_DURATION 5000
 #define CAR_YELLOW_DURATION 1500
 #define CAR_RED_DURATION 3000
 
