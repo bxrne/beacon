@@ -12,11 +12,8 @@
 
 extern SemaphoreHandle_t xPedestrianSemaphore;
 
-// Replace CircularBuffer with circular_buffer_t
 static circular_buffer_t *car_light_buffer = NULL;
 static circular_buffer_t *ped_light_buffer = NULL;
-
-// Declare mutexes for thread safety
 static SemaphoreHandle_t car_light_mutex = NULL;
 static SemaphoreHandle_t ped_light_mutex = NULL;
 
@@ -25,7 +22,6 @@ void init_metrics_buffers(size_t size)
   car_light_buffer = circular_buffer_init(size);
   ped_light_buffer = circular_buffer_init(size);
 
-  // Initialize mutexes
   car_light_mutex = xSemaphoreCreateMutex();
   ped_light_mutex = xSemaphoreCreateMutex();
 }
@@ -34,7 +30,6 @@ void add_car_light_state(LightColor state)
 {
   if (car_light_buffer)
   {
-    // Take mutex before accessing the buffer
     xSemaphoreTake(car_light_mutex, portMAX_DELAY);
     circular_buffer_push(car_light_buffer, (int)state);
     xSemaphoreGive(car_light_mutex);
@@ -68,7 +63,7 @@ LightColor get_recent_car_light_state()
 
 LightColor get_recent_ped_light_state()
 {
-  LightColor state = LIGHT_RED; // Default value
+  LightColor state = LIGHT_RED; // Default value (safest)
   if (ped_light_buffer)
   {
     xSemaphoreTake(ped_light_mutex, portMAX_DELAY);
@@ -94,7 +89,6 @@ void free_metrics_buffers()
     ped_light_buffer = NULL;
   }
 
-  // Delete mutexes
   if (car_light_mutex)
   {
     vSemaphoreDelete(car_light_mutex);
@@ -118,8 +112,6 @@ const char *light_color_to_string(LightColor color)
   case LIGHT_RED:
     return "RED";
   default:
-    return "UNKNOWN";
+    return "UNKNOWN"; // Diagnosable downstream
   }
 }
-
-// Remove the update_light_buffers and get_metrics functions if they're no longer needed

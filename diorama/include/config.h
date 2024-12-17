@@ -7,6 +7,9 @@
 #define WIFI_SSID "coldspot"
 #define WIFI_PASS "helloworld1"
 
+// TCP server port
+#define TCP_PORT 80
+
 // Car light GPIO pins and durations
 #define CAR_GREEN_PIN 18
 #define CAR_YELLOW_PIN 19

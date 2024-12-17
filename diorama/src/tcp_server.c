@@ -3,22 +3,22 @@
 #include "freertos/task.h"
 #include "lwip/sockets.h"
 #include "esp_log.h"
-#include <string.h>      // For strlen and strstr
-#include "metrics.h"     // Include the metrics header
-#include "esp_system.h"  // Include for esp_restart()l
-#include "driver/gpio.h" // Include for GPIO functions
+#include <string.h>
+#include "metrics.h"
+#include "esp_system.h"
+#include "driver/gpio.h"
 #include "config.h"
 #define TAG "TCP_SERVER"
 
-// Custom Protocol Design:
+// INFO: Custom Protocol Design:
 // - Start Byte: 0x02
 // - Length Byte: Specifies the length of the payload
 // - Payload: Actual data
-// - End Byte: 0x03 (optional)
+// - End Byte: 0x03 (optional as length exists but good for validation)
+// key: value, key: value, key: value => (car_light: green, ped_light: red, recorded_at: UTC)
 
-void tcp_server_task(void *pvParameters)
+void TCPServerTask(void *pvParameters)
 {
-  // Create socket, bind, listen, and accept connections
   int listen_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
   if (listen_sock < 0)
   {
@@ -30,7 +30,7 @@ void tcp_server_task(void *pvParameters)
   struct sockaddr_in dest_addr;
   dest_addr.sin_addr.s_addr = htonl(INADDR_ANY);
   dest_addr.sin_family = AF_INET;
-  dest_addr.sin_port = htons(80);
+  dest_addr.sin_port = htons(TCP_PORT);
   if (bind(listen_sock, (struct sockaddr *)&dest_addr, sizeof(dest_addr)) < 0)
   {
     ESP_LOGE(TAG, "Socket unable to bind: errno %d", errno);
@@ -58,13 +58,12 @@ void tcp_server_task(void *pvParameters)
       break;
     }
 
-    char rx_buffer[1024]; // Increase buffer size if needed
+    char rx_buffer[1024];
     int total_len = 0;
     bool headers_received = false;
     int content_length = 0;
 
-    // Receive data in a loop to handle cases where data arrives in multiple chunks
-    while (1)
+    while (1) // may come in chunks so loop
     {
       int len = recv(sock, rx_buffer + total_len, sizeof(rx_buffer) - total_len - 1, 0);
       if (len < 0)
@@ -83,15 +82,12 @@ void tcp_server_task(void *pvParameters)
         total_len += len;
         rx_buffer[total_len] = '\0';
 
-        // Check if we've received the full headers
         if (!headers_received)
         {
           char *headers_end = strstr(rx_buffer, "\r\n\r\n");
           if (headers_end)
           {
             headers_received = true;
-
-            // Parse Content-Length
             char *cl_ptr = strstr(rx_buffer, "Content-Length:");
             if (cl_ptr)
             {
@@ -101,7 +97,6 @@ void tcp_server_task(void *pvParameters)
               content_length = atoi(cl_ptr);
             }
 
-            // Calculate remaining body length
             int headers_size = headers_end + 4 - rx_buffer;
             int body_len = total_len - headers_size;
 
@@ -142,34 +137,29 @@ void tcp_server_task(void *pvParameters)
 
     ESP_LOGI(TAG, "Received request:\n%s", rx_buffer);
 
-    // Check if the request is a POST request to /cmd
+    // INFO: Check if the request is a POST request to /cmd
     if (strstr(rx_buffer, "POST /cmd") != NULL)
     {
       // Find end of headers
       char *body = strstr(rx_buffer, "\r\n\r\n");
       if (body != NULL)
       {
-        body += 4; // Move past the "\r\n\r\n"
+        body += 4; // Move past \r\n\r\n"
 
-        // Calculate actual body length received
         int headers_size = body - rx_buffer;
         int body_len = total_len - headers_size;
 
-        // Ensure we have the full body
         if (body_len < content_length)
         {
           ESP_LOGE(TAG, "Incomplete body received");
-          // You may want to read the remaining data here
         }
 
         ESP_LOGI(TAG, "Received command: %.*s", content_length, body);
 
-        // Extract the command from the body
         char command[128];
         strncpy(command, body, content_length);
         command[content_length] = '\0';
 
-        // Check if the command is "reboot"
         if (strcmp(command, "reboot") == 0)
         {
           // Send acknowledgment to client
@@ -180,19 +170,10 @@ void tcp_server_task(void *pvParameters)
               "\r\n"
               "Rebooting device...\n";
           send(sock, response, strlen(response), 0);
-
-          // Log the action
           ESP_LOGI(TAG, "Rebooting device on command.");
-
-          // Introduce a short delay to ensure LEDs turn off
-          vTaskDelay(pdMS_TO_TICKS(100));
-
-          // Close the socket before rebooting
           close(sock);
-
-          // Reboot the device
           esp_restart();
-                }
+        }
         else
         {
           // Handle unknown commands
@@ -221,7 +202,6 @@ void tcp_server_task(void *pvParameters)
     }
     else if (strstr(rx_buffer, "GET /metric") != NULL)
     {
-      // Prepare the response in the custom format
       char response[512];
       char payload[256];
 
@@ -235,13 +215,11 @@ void tcp_server_task(void *pvParameters)
       struct tm timeinfo;
       localtime_r(&now, &timeinfo);
       char time_str[64];
-      strftime(time_str, sizeof(time_str), "%H:%M:%S", &timeinfo);
+      strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", &timeinfo);
 
-      // Format the payload
-      snprintf(payload, sizeof(payload), "Car Light: %s, Ped Light: %s, Time: %s\n",
+      snprintf(payload, sizeof(payload), "car_light: %s, ped_light: %s, recorded_at: %s\n",
                car_light_str, ped_light_str, time_str);
 
-      // Prepare the response
       snprintf(response, sizeof(response),
                "HTTP/1.1 200 OK\r\n"
                "Content-Type: text/plain\r\n"
@@ -250,12 +228,10 @@ void tcp_server_task(void *pvParameters)
                "%s",
                strlen(payload), payload);
 
-      // Send the response
       send(sock, response, strlen(response), 0);
     }
-    else if (strstr(rx_buffer, "GET / ") != NULL)
+    else if (strstr(rx_buffer, "GET / ") != NULL) // Sanity check
     {
-      // Prepare the response in the custom format
       char response[128];
       const char *payload = "Hello, World!";
       uint8_t payload_length = strlen(payload);
@@ -263,12 +239,9 @@ void tcp_server_task(void *pvParameters)
       response[0] = 0x02;           // Start Byte
       response[1] = payload_length; // Length Byte
       memcpy(&response[2], payload, payload_length);
-      response[2 + payload_length] = 0x03; // End Byte (optional)
-
-      // Log the payload that is about to be sent
+      response[2 + payload_length] = 0x03; // End Byte
       ESP_LOGI(TAG, "Sending payload: %s", payload);
-
-      send(sock, response, 3 + payload_length, 0); // Send the response
+      send(sock, response, 3 + payload_length, 0);
     }
     else
     {

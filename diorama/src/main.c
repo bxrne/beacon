@@ -1,13 +1,12 @@
 #include <freertos/FreeRTOS.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdio.h>
-
 #include "freertos/task.h"
 #include "freertos/queue.h"
 #include "freertos/timers.h"
 #include "freertos/semphr.h"
+#include <stdint.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdio.h>
 #include "driver/gpio.h"
 #include "esp_log.h"
 #include "config.h"
@@ -22,7 +21,7 @@
 #include "tcp_server.h"
 #include "lwip/apps/sntp.h"
 #include "circular_buffer.h"
-#include "metrics.h" // Include for metrics functions
+#include "metrics.h"
 
 #define TAG "MAIN"
 
@@ -51,7 +50,9 @@ void init_gpio(void)
     gpio_install_isr_service(0);
     gpio_isr_handler_add(PED_BUTTON_PIN, button_isr_handler, NULL);
 
-    gpio_set_level(PED_RED_PIN, 1); // Ensure pedestrian light is red by default
+    // Safe initial state
+    gpio_set_level(PED_RED_PIN, 1);
+    gpio_set_level(CAR_RED_PIN, 1);
 }
 
 void wifi_init(void)
@@ -77,17 +78,17 @@ void wifi_init(void)
             .password = WIFI_PASS,
         },
     };
+
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
     ESP_ERROR_CHECK(esp_wifi_connect());
 
-    // Initialize SNTP
     sntp_setoperatingmode(SNTP_OPMODE_POLL);
     sntp_setservername(0, "pool.ntp.org");
     sntp_init();
 
-    // Wait for time to be set
+    // Sync time w/ (S)NTP
     time_t now = 0;
     struct tm timeinfo = {0};
     int retry = 0;
@@ -115,15 +116,5 @@ void app_main(void)
 
     xTaskCreate(TrafficLightTask, "TrafficLightTask", 2048, NULL, 1, NULL);
     xTaskCreate(PedestrianRequestTask, "PedestrianRequestTask", 2048, NULL, 1, NULL);
-    xTaskCreate(tcp_server_task, "TCPServerTask", 4096, NULL, 5, NULL);
-
-    // Remove the loop that updates light buffers
-    // while (1)
-    // {
-    //     update_light_buffers();
-    //     vTaskDelay(pdMS_TO_TICKS(1000)); // Update every second
-    // }
-
-    // Remove the call to free_metrics_buffers()
-    // free_metrics_buffers();
+    xTaskCreate(TCPServerTask, "TCPServerTask", 4096, NULL, 5, NULL); // higher priority: needs to handle requests quickly (2 cores so other tasks can run)
 }

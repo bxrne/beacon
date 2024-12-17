@@ -17,13 +17,12 @@ void button_isr_handler(void *arg)
 
 void init_ped_request(void)
 {
-  // Initialize pedestrian button GPIO
   esp_rom_gpio_pad_select_gpio(PED_BUTTON_PIN);
   gpio_set_direction(PED_BUTTON_PIN, GPIO_MODE_INPUT);
-  gpio_set_intr_type(PED_BUTTON_PIN, GPIO_INTR_POSEDGE);
+  gpio_set_intr_type(PED_BUTTON_PIN, GPIO_INTR_POSEDGE); // Interrupt on rising edge (press)
 
   gpio_install_isr_service(0);
-  gpio_isr_handler_add(PED_BUTTON_PIN, button_isr_handler, NULL);
+  gpio_isr_handler_add(PED_BUTTON_PIN, button_isr_handler, NULL); // Register
 }
 
 void PedestrianRequestTask(void *pvParameters)
