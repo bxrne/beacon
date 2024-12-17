@@ -6,6 +6,7 @@
 
 #include "freertos/task.h"
 #include "freertos/queue.h"
+#include "freertos/timers.h"
 #include "freertos/semphr.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
@@ -16,10 +17,12 @@
 #include "esp_wifi.h"
 #include "esp_event.h"
 #include "nvs_flash.h"
+#include "lwip/sockets.h"
 #include "esp_netif.h"
 #include "tcp_server.h"
 #include "lwip/apps/sntp.h"
-#include "metrics.h" 
+#include "circular_buffer.h"
+#include "metrics.h" // Include for metrics functions
 
 #define TAG "MAIN"
 
@@ -48,13 +51,11 @@ void init_gpio(void)
     gpio_install_isr_service(0);
     gpio_isr_handler_add(PED_BUTTON_PIN, button_isr_handler, NULL);
 
-    // Pedestrian light should be red on start
-    gpio_set_level(PED_RED_PIN, 1);
+    gpio_set_level(PED_RED_PIN, 1); // Ensure pedestrian light is red by default
 }
 
 void wifi_init(void)
 {
-    // need nvs flash for
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND)
     {
@@ -109,14 +110,11 @@ void app_main(void)
 
     init_gpio();
     init_ped_request();
-
-    // Initialize metrics buffers
+    wifi_init();
     init_metrics_buffers(10);
 
     xTaskCreate(TrafficLightTask, "TrafficLightTask", 2048, NULL, 1, NULL);
     xTaskCreate(PedestrianRequestTask, "PedestrianRequestTask", 2048, NULL, 1, NULL);
-
-    wifi_init();
     xTaskCreate(tcp_server_task, "TCPServerTask", 4096, NULL, 5, NULL);
 
     // Update light buffers periodically
@@ -126,6 +124,5 @@ void app_main(void)
         vTaskDelay(pdMS_TO_TICKS(1000)); // Update every second
     }
 
-    // Free metrics buffers
     free_metrics_buffers();
 }

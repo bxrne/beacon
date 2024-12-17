@@ -26,8 +26,6 @@ void init_ped_request(void)
   gpio_isr_handler_add(PED_BUTTON_PIN, button_isr_handler, NULL);
 }
 
-
-
 void PedestrianRequestTask(void *pvParameters)
 {
   uint32_t button_pressed;

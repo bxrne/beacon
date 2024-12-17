@@ -11,7 +11,7 @@
 #define CAR_RED_PIN 21
 
 #define CAR_GREEN_DURATION 5000 // Milliseconds
-#define CAR_YELLOW_DURATION 1000
+#define CAR_YELLOW_DURATION 1500
 #define CAR_RED_DURATION 3000
 
 // Pedestrian light GPIO pins and durations
