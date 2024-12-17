@@ -16,17 +16,28 @@ extern SemaphoreHandle_t xPedestrianSemaphore;
 static circular_buffer_t *car_light_buffer = NULL;
 static circular_buffer_t *ped_light_buffer = NULL;
 
+// Declare mutexes for thread safety
+static SemaphoreHandle_t car_light_mutex = NULL;
+static SemaphoreHandle_t ped_light_mutex = NULL;
+
 void init_metrics_buffers(size_t size)
 {
   car_light_buffer = circular_buffer_init(size);
   ped_light_buffer = circular_buffer_init(size);
+
+  // Initialize mutexes
+  car_light_mutex = xSemaphoreCreateMutex();
+  ped_light_mutex = xSemaphoreCreateMutex();
 }
 
 void add_car_light_state(LightColor state)
 {
   if (car_light_buffer)
   {
+    // Take mutex before accessing the buffer
+    xSemaphoreTake(car_light_mutex, portMAX_DELAY);
     circular_buffer_push(car_light_buffer, (int)state);
+    xSemaphoreGive(car_light_mutex);
   }
 }
 
@@ -34,26 +45,66 @@ void add_ped_light_state(LightColor state)
 {
   if (ped_light_buffer)
   {
+    xSemaphoreTake(ped_light_mutex, portMAX_DELAY);
     circular_buffer_push(ped_light_buffer, (int)state);
+    xSemaphoreGive(ped_light_mutex);
   }
 }
 
 LightColor get_recent_car_light_state()
 {
-  if (car_light_buffer && !circular_buffer_is_empty(car_light_buffer))
+  LightColor state = LIGHT_RED; // Default value
+  if (car_light_buffer)
   {
-    return (LightColor)circular_buffer_peek_last(car_light_buffer);
+    xSemaphoreTake(car_light_mutex, portMAX_DELAY);
+    if (!circular_buffer_is_empty(car_light_buffer))
+    {
+      state = (LightColor)circular_buffer_peek_last(car_light_buffer);
+    }
+    xSemaphoreGive(car_light_mutex);
   }
-  return LIGHT_RED; // Default value if buffer is empty
+  return state;
 }
 
 LightColor get_recent_ped_light_state()
 {
-  if (ped_light_buffer && !circular_buffer_is_empty(ped_light_buffer))
+  LightColor state = LIGHT_RED; // Default value
+  if (ped_light_buffer)
   {
-    return (LightColor)circular_buffer_peek_last(ped_light_buffer);
+    xSemaphoreTake(ped_light_mutex, portMAX_DELAY);
+    if (!circular_buffer_is_empty(ped_light_buffer))
+    {
+      state = (LightColor)circular_buffer_peek_last(ped_light_buffer);
+    }
+    xSemaphoreGive(ped_light_mutex);
   }
-  return LIGHT_RED; // Default value if buffer is empty
+  return state;
+}
+
+void free_metrics_buffers()
+{
+  if (car_light_buffer)
+  {
+    circular_buffer_free(car_light_buffer);
+    car_light_buffer = NULL;
+  }
+  if (ped_light_buffer)
+  {
+    circular_buffer_free(ped_light_buffer);
+    ped_light_buffer = NULL;
+  }
+
+  // Delete mutexes
+  if (car_light_mutex)
+  {
+    vSemaphoreDelete(car_light_mutex);
+    car_light_mutex = NULL;
+  }
+  if (ped_light_mutex)
+  {
+    vSemaphoreDelete(ped_light_mutex);
+    ped_light_mutex = NULL;
+  }
 }
 
 const char *light_color_to_string(LightColor color)
@@ -68,20 +119,6 @@ const char *light_color_to_string(LightColor color)
     return "RED";
   default:
     return "UNKNOWN";
-  }
-}
-
-void free_metrics_buffers()
-{
-  if (car_light_buffer)
-  {
-    circular_buffer_free(car_light_buffer);
-    car_light_buffer = NULL;
-  }
-  if (ped_light_buffer)
-  {
-    circular_buffer_free(ped_light_buffer);
-    ped_light_buffer = NULL;
   }
 }
 

@@ -2,6 +2,8 @@
 #define METRICS_H
 
 #include <stddef.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
 
 typedef enum
 {
