@@ -75,9 +75,29 @@ void tcp_server_task(void *pvParameters)
       // Prepare the response in the custom format
       char response[128];
       char payload[128];
-      get_metrics(payload, sizeof(payload)); // Get the metrics
+
+      LightColor car_light_state = get_recent_car_light_state();
+      LightColor ped_light_state = get_recent_ped_light_state();
+
+      // Convert light states to strings
+      const char *car_light_str = light_color_to_string(car_light_state);
+      const char *ped_light_str = light_color_to_string(ped_light_state);
+
+      // Get the current time
+      time_t now;
+      struct tm timeinfo;
+      time(&now);
+      localtime_r(&now, &timeinfo);
+      char time_str[64];
+      strftime(time_str, sizeof(time_str), "%H:%M:%S", &timeinfo);
+
+      // Format the payload
+      snprintf(payload, sizeof(payload), "Car Light: %s, Ped Light: %s, Time: %s",
+               car_light_str, ped_light_str, time_str);
+
       uint8_t payload_length = strlen(payload);
 
+      // Prepare the response in the custom protocol format
       response[0] = 0x02;           // Start Byte
       response[1] = payload_length; // Length Byte
       memcpy(&response[2], payload, payload_length);

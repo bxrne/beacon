@@ -5,7 +5,7 @@
 circular_buffer_t *circular_buffer_init(size_t size)
 {
   circular_buffer_t *cb = (circular_buffer_t *)malloc(sizeof(circular_buffer_t));
-  cb->buffer = (char **)malloc(size * sizeof(char *));
+  cb->buffer = (int *)malloc(size * sizeof(int));
   cb->max = size;
   cb->head = 0;
   cb->tail = 0;
@@ -15,41 +15,49 @@ circular_buffer_t *circular_buffer_init(size_t size)
 
 void circular_buffer_free(circular_buffer_t *cb)
 {
-  for (size_t i = 0; i < cb->max; i++)
-  {
-    free(cb->buffer[i]);
-  }
   free(cb->buffer);
   free(cb);
 }
 
-int circular_buffer_push(circular_buffer_t *cb, const char *item)
+int circular_buffer_push(circular_buffer_t *cb, int item)
 {
-  size_t len = strlen(item) + 1;
-  cb->buffer[cb->head] = (char *)malloc(len);
-  strncpy(cb->buffer[cb->head], item, len);
+  cb->buffer[cb->head] = item;
+  cb->head = (cb->head + 1) % cb->max;
 
   if (cb->full)
   {
     cb->tail = (cb->tail + 1) % cb->max;
   }
 
-  cb->head = (cb->head + 1) % cb->max;
   cb->full = (cb->head == cb->tail);
-
   return 0;
 }
 
-const char *circular_buffer_pop(circular_buffer_t *cb)
+int circular_buffer_pop(circular_buffer_t *cb)
 {
-  if (cb->head == cb->tail && !cb->full)
+  if (circular_buffer_is_empty(cb))
   {
-    return NULL;
+    return -1;
   }
 
-  const char *item = cb->buffer[cb->tail];
-  cb->tail = (cb->tail + 1) % cb->max;
+  int item = cb->buffer[cb->tail];
   cb->full = 0;
-
+  cb->tail = (cb->tail + 1) % cb->max;
   return item;
+}
+
+bool circular_buffer_is_empty(circular_buffer_t *cb)
+{
+  return (!cb->full && (cb->head == cb->tail));
+}
+
+int circular_buffer_peek_last(circular_buffer_t *cb)
+{
+  if (circular_buffer_is_empty(cb))
+  {
+    return -1;
+  }
+
+  size_t index = (cb->head == 0) ? cb->max - 1 : cb->head - 1;
+  return cb->buffer[index];
 }

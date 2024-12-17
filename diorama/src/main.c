@@ -111,18 +111,18 @@ void app_main(void)
     init_gpio();
     init_ped_request();
     wifi_init();
-    init_metrics_buffers(10);
+    init_metrics_buffers(10); // Initialize metrics buffers
 
     xTaskCreate(TrafficLightTask, "TrafficLightTask", 2048, NULL, 1, NULL);
     xTaskCreate(PedestrianRequestTask, "PedestrianRequestTask", 2048, NULL, 1, NULL);
     xTaskCreate(tcp_server_task, "TCPServerTask", 4096, NULL, 5, NULL);
 
-    // Update light buffers periodically
-    while (1)
-    {
-        update_light_buffers();
-        vTaskDelay(pdMS_TO_TICKS(1000)); // Update every second
-    }
+    // Remove the loop that updates light buffers
+    // while (1)
+    // {
+    //     update_light_buffers();
+    //     vTaskDelay(pdMS_TO_TICKS(1000)); // Update every second
+    // }
 
     free_metrics_buffers();
 }
