@@ -124,5 +124,6 @@ void app_main(void)
     //     vTaskDelay(pdMS_TO_TICKS(1000)); // Update every second
     // }
 
-    free_metrics_buffers();
+    // Remove the call to free_metrics_buffers()
+    // free_metrics_buffers();
 }
