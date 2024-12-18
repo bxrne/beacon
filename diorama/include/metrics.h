@@ -24,4 +24,6 @@ const char *light_color_to_string(LightColor color);
 
 void free_metrics_buffers();
 
+void get_current_time_utc(char *buffer, size_t buffer_size);
+
 #endif // METRICS_H

@@ -210,12 +210,8 @@ void TCPServerTask(void *pvParameters)
       LightColor ped_light_state = get_recent_ped_light_state();
       const char *car_light_str = light_color_to_string(car_light_state);
       const char *ped_light_str = light_color_to_string(ped_light_state);
-      time_t now;
-      time(&now);
-      struct tm timeinfo;
-      localtime_r(&now, &timeinfo);
       char time_str[64];
-      strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", &timeinfo);
+      get_current_time_utc(time_str, sizeof(time_str));
 
       snprintf(payload, sizeof(payload), "car_light: %s, ped_light: %s, recorded_at: %s\n",
                car_light_str, ped_light_str, time_str);
