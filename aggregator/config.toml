@@ -1,0 +1,15 @@
+[labels]
+environment = "production"
+service = "aggregator"
+
+[telemetry]
+server = "http://localhost:8080"
+retry_interval = 5
+
+[logging]
+level = "debug"
+
+[targets]
+hosts = ["192.168.149.251"]
+ports = ["80"]
+frequencies = [1]
