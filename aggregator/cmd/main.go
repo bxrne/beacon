@@ -29,9 +29,9 @@ func main() {
 		defer p.Stop()
 	}
 
-	// cmdPoller := poller.NewCommandPoller(db_conn, log) // Adjust port as needed
-	// cmdPoller.Start()
-	// defer cmdPoller.Stop()
+	commandPoller := poller.NewCommandPoller(cfg, log)
+	commandPoller.Start()
+	defer commandPoller.Stop()
 
 	select {} // Block forever
 }
