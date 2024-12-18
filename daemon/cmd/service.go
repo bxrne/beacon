@@ -7,7 +7,6 @@ import (
 	"github.com/bxrne/beacon/daemon/internal/config"
 	"github.com/bxrne/beacon/daemon/internal/logger"
 	"github.com/bxrne/beacon/daemon/internal/stats"
-	"github.com/bxrne/beacon/daemon/internal/uploader"
 	"github.com/charmbracelet/log"
 )
 
@@ -17,7 +16,6 @@ type Service struct {
 	hostMonitor   stats.HostMon
 	memoryMonitor stats.MemoryMon
 	diskMonitor   stats.DiskMon
-	uploader      *uploader.Uploader
 }
 
 func NewService(cfgPath string) (*Service, error) {
@@ -33,24 +31,16 @@ func NewService(cfgPath string) (*Service, error) {
 	memoryMonitor := stats.MemoryMon{}
 	diskMonitor := stats.DiskMon{}
 
-	uploader, err := uploader.NewUploader(cfg)
-	if err != nil {
-		return nil, fmt.Errorf("error creating uploader: %w", err)
-	}
-
 	return &Service{
 		cfg:           cfg,
 		log:           log,
 		hostMonitor:   hostMonitor,
 		memoryMonitor: memoryMonitor,
 		diskMonitor:   diskMonitor,
-		uploader:      uploader,
 	}, nil
 }
 
 func (s *Service) Run() {
-	go s.uploader.Start()
-
 	ticker := time.NewTicker(time.Duration(s.cfg.Monitoring.Frequency) * time.Second)
 	defer ticker.Stop()
 
@@ -63,6 +53,5 @@ func (s *Service) Run() {
 
 		s.log.Debug(metrics.String())
 
-		s.uploader.AddToQueue(metrics)
 	}
 }
