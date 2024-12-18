@@ -314,16 +314,18 @@ func (s *Server) handleCommand(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create command
+	// Create command with status
 	command := db.Command{
 		Name:     req.Command,
 		DeviceID: device.ID,
+		Status:   "pending",
 	}
 
 	if err := s.db.Create(&command).Error; err != nil {
+		s.logger.Errorf("handleCommand: failed to create command: %s", err)
 		s.respondJSON(w, http.StatusInternalServerError, errorResponse{Error: "failed to create command"})
 		return
 	}
 
-	s.respondJSON(w, http.StatusOK, map[string]string{"status": "success"})
+	s.respondJSON(w, http.StatusOK, map[string]string{"status": "success", "message": "Command queued successfully"})
 }

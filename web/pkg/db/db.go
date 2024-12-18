@@ -118,6 +118,21 @@ func migrate(db *gorm.DB, cfg *config.Config) error {
 		return fmt.Errorf("failed to update metrics unit: %w", err)
 	}
 
+	// Drop and recreate commands table to remove unique constraint
+	if err := db.Migrator().DropTable(&Command{}); err != nil {
+		return fmt.Errorf("failed to drop commands table: %w", err)
+	}
+	if err := db.AutoMigrate(&Command{}); err != nil {
+		return fmt.Errorf("failed to recreate commands table: %w", err)
+	}
+
+	// Create index on device_id and name for faster lookups
+	if !indexExists(db, "idx_commands_device_name") {
+		if err := db.Exec("CREATE INDEX idx_commands_device_name ON commands(device_id, name)").Error; err != nil {
+			return fmt.Errorf("failed to create command index: %w", err)
+		}
+	}
+
 	return nil
 }
 
