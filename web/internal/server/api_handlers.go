@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bxrne/beacon/web/pkg/db"
-	"github.com/bxrne/beacon/web/pkg/metrics"
+	"github.com/bxrne/beacon/web/internal/db"
+	"github.com/bxrne/beacon/web/internal/metrics"
 	"gorm.io/gorm"
 )
 

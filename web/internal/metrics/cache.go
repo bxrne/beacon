@@ -3,8 +3,8 @@ package metrics
 import (
 	"time"
 
+	"github.com/bxrne/beacon/web/internal/cache"
 	"github.com/bxrne/beacon/web/internal/config"
-	"github.com/bxrne/beacon/web/pkg/cache"
 )
 
 type MetricsCache struct {

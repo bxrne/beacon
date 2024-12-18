@@ -8,15 +8,16 @@ import (
 	"syscall"
 
 	"github.com/bxrne/beacon/web/internal/config"
+	"github.com/bxrne/beacon/web/internal/db"
 	"github.com/bxrne/beacon/web/internal/logger"
-	"github.com/bxrne/beacon/web/pkg/db"
-	"github.com/bxrne/beacon/web/pkg/server"
+	"github.com/bxrne/beacon/web/internal/server"
 
 	_ "github.com/bxrne/beacon/web/docs" // This line is necessary for go-swagger to find your docs
 )
 
 // @title Beacon API
 // @version 1.0
+// @host beacon-web.fly.dev
 // @basePath /api/
 // @description Collects device and metric data from clients
 func main() {

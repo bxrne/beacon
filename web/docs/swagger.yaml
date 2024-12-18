@@ -60,25 +60,6 @@ info:
   title: Beacon API
   version: "1.0"
 paths:
-  /charts:
-    get:
-      consumes:
-      - application/json
-      description: Get charts view page
-      produces:
-      - text/html
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: string
-        "500":
-          description: Internal Server Error
-          schema:
-            type: string
-      summary: Show charts view
-      tags:
-      - charts
   /command:
     post:
       consumes:
@@ -176,31 +157,6 @@ paths:
       summary: Get pending commands
       tags:
       - command
-  /dashboard:
-    get:
-      consumes:
-      - application/json
-      description: Get dashboard view page
-      parameters:
-      - description: Page number
-        in: query
-        name: page
-        type: integer
-      produces:
-      - text/html
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            type: string
-      summary: Show dashboard view
-      tags:
-      - dashboard
   /device:
     get:
       description: Find all registered devices

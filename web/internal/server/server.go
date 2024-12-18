@@ -11,7 +11,7 @@ import (
 
 	_ "github.com/bxrne/beacon/web/docs" // This line is necessary for go-swagger to find your docs
 	"github.com/bxrne/beacon/web/internal/config"
-	"github.com/bxrne/beacon/web/pkg/metrics"
+	"github.com/bxrne/beacon/web/internal/metrics"
 	"github.com/charmbracelet/log"
 	"github.com/gorilla/mux"
 	httpSwagger "github.com/swaggo/http-swagger"
