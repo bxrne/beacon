@@ -64,7 +64,7 @@ func (s *HTTPServer) handleCommand(w http.ResponseWriter, r *http.Request) {
 
 	var cmd struct {
 		Command string `json:"command"`
-		Value   int    `json:"value,omitempty"`
+		Message string `json:"message,omitempty"`
 	}
 	if err := json.Unmarshal(body, &cmd); err != nil {
 		s.logger.Errorf("Failed to parse command: %v", err)
@@ -75,14 +75,12 @@ func (s *HTTPServer) handleCommand(w http.ResponseWriter, r *http.Request) {
 	// Handle different commands
 	switch cmd.Command {
 	case "notify":
-		if err := stats.SendNotification("Beacon Alert", "This is a test notification", s.logger); err != nil {
-			s.logger.Error("failed to send notification", "error", err)
-			http.Error(w, "Failed to execute command", http.StatusInternalServerError)
-			return
+		message := "No message provided"
+		if cmd.Message != "" {
+			message = cmd.Message
 		}
-	case "brightness":
-		if err := stats.SetScreenBrightness(cmd.Value, s.logger); err != nil {
-			s.logger.Error("failed to set brightness", "error", err)
+		if err := stats.SendNotification("Beacon Alert", message, s.logger); err != nil {
+			s.logger.Error("failed to send notification", "error", err)
 			http.Error(w, "Failed to execute command", http.StatusInternalServerError)
 			return
 		}
