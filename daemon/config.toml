@@ -10,4 +10,4 @@ service = "beacon-daemon"
 level = "debug"
 
 [server]
-port = 4000
+port = 80

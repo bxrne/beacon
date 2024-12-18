@@ -186,6 +186,21 @@ func (s *Server) handleGetDevices(w http.ResponseWriter, r *http.Request) {
 	s.respondJSON(w, http.StatusOK, deviceNames)
 }
 
+// handleGetMetrics godoc
+// @Summary      Get metrics with pagination and filtering
+// @Description  Get metrics for a device with pagination and filtering options
+// @Tags         metrics
+// @Produce      json
+// @Param        X-DeviceID  header    string  true  "Device ID"
+// @Param        page        query     int     false "Page number"
+// @Param        sort        query     string  false "Sort order"
+// @Param        type        query     string  false "Metric type"
+// @Param        view        query     string  false "View type (charts)"
+// @Success      200         {object}  map[string]interface{}
+// @Failure      400         {object}  errorResponse
+// @Failure      404         {object}  errorResponse
+// @Failure      500         {object}  errorResponse
+// @Router       /metrics [get]
 func (s *Server) handleGetMetrics(w http.ResponseWriter, r *http.Request) {
 	deviceID := r.Header.Get("X-DeviceID")
 	if deviceID == "" {
@@ -293,6 +308,18 @@ func (s *Server) handleGetMetrics(w http.ResponseWriter, r *http.Request) {
 	s.respondJSON(w, http.StatusOK, response)
 }
 
+// handleCommand godoc
+// @Summary      Submit command
+// @Description  Submit a command for a device
+// @Tags         command
+// @Accept       json
+// @Produce      json
+// @Param        commandRequest  body      commandRequest  true  "Command request"
+// @Success      200             {object}  map[string]string
+// @Failure      400             {object}  errorResponse
+// @Failure      404             {object}  errorResponse
+// @Failure      500             {object}  errorResponse
+// @Router       /command [post]
 func (s *Server) handleCommand(w http.ResponseWriter, r *http.Request) {
 	var req commandRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -330,13 +357,79 @@ func (s *Server) handleCommand(w http.ResponseWriter, r *http.Request) {
 	s.respondJSON(w, http.StatusOK, map[string]string{"status": "success", "message": "Command queued successfully"})
 }
 
+// handleGetCommands godoc
+// @Summary      Get pending commands
+// @Description  Get pending commands for a device
+// @Tags         command
+// @Produce      json
+// @Param        X-DeviceID  header    string  true  "Device ID"
+// @Success      200         {object}  []metrics.CommandResponse
+// @Failure      400         {object}  errorResponse
+// @Failure      500         {object}  errorResponse
+// @Router       /commands [get]
 func (s *Server) handleGetCommands(w http.ResponseWriter, r *http.Request) {
+	deviceID := r.Header.Get("X-DeviceID")
+	if deviceID == "" {
+		s.logger.Error("missing device ID")
+		s.respondJSON(w, http.StatusBadRequest, errorResponse{Error: "missing device ID"})
+		return
+	}
+
+	// Get pending commands for the device
 	var commands []db.Command
-	if err := s.db.Preload("Device").Find(&commands).Error; err != nil {
-		s.logger.Errorf("handleGetCommands: failed to get commands: %s", err)
+	if err := s.db.Preload("Device").Where("device_id IN (SELECT id FROM devices WHERE name = ?) AND status = ?",
+		deviceID, "pending").Find(&commands).Error; err != nil {
+		s.logger.Error("failed to get commands", "error", err)
 		s.respondJSON(w, http.StatusInternalServerError, errorResponse{Error: "failed to get commands"})
 		return
 	}
 
-	s.respondJSON(w, http.StatusOK, commands)
+	// Convert to response format
+	var response []metrics.CommandResponse
+	for _, cmd := range commands {
+		response = append(response, metrics.CommandResponse{
+			Device:  deviceID,
+			Command: cmd.Name,
+		})
+	}
+
+	// If no commands found, return empty array instead of null
+	if response == nil {
+		response = []metrics.CommandResponse{}
+	}
+
+	s.respondJSON(w, http.StatusOK, response)
+}
+
+// handleCommandStatus godoc
+// @Summary      Update command status
+// @Description  Update the status of a command for a device
+// @Tags         command
+// @Accept       json
+// @Produce      json
+// @Param        commandStatusRequest  body      metrics.CommandStatusRequest  true  "Command status request"
+// @Success      200                   {object}  map[string]string
+// @Failure      400                   {object}  errorResponse
+// @Failure      500                   {object}  errorResponse
+// @Router       /command/status [post]
+func (s *Server) handleCommandStatus(w http.ResponseWriter, r *http.Request) {
+	var req metrics.CommandStatusRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.respondJSON(w, http.StatusBadRequest, errorResponse{Error: "invalid request"})
+		return
+	}
+
+	// Update command status
+	result := s.db.Model(&db.Command{}).
+		Where("device_id IN (SELECT id FROM devices WHERE name = ?) AND name = ? AND status = ?",
+			req.Device, req.Command, "pending").
+		Update("status", req.Status)
+
+	if result.Error != nil {
+		s.logger.Error("failed to update command status", "error", result.Error)
+		s.respondJSON(w, http.StatusInternalServerError, errorResponse{Error: "failed to update command status"})
+		return
+	}
+
+	s.respondJSON(w, http.StatusOK, map[string]string{"status": "success"})
 }

@@ -142,4 +142,5 @@ func (s *Server) setupRoutes() {
 	apiRouter.HandleFunc("/metrics", s.handleGetMetrics).Methods(http.MethodGet)
 	apiRouter.HandleFunc("/command", s.handleCommand).Methods(http.MethodPost)
 	apiRouter.HandleFunc("/command", s.handleGetCommands).Methods(http.MethodGet)
+	apiRouter.HandleFunc("/command/status", s.handleCommandStatus).Methods(http.MethodPut) // Add this line
 }

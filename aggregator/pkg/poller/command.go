@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/bxrne/beacon/aggregator/internal/config"
@@ -17,6 +18,10 @@ type CommandPoller struct {
 	cfg        *config.Config
 	pollTicker *time.Ticker
 	stopChan   chan struct{}
+}
+
+type Device struct {
+	Name string `json:"name"`
 }
 
 type Command struct {
@@ -54,16 +59,21 @@ func (p *CommandPoller) Stop() {
 
 func (p *CommandPoller) pollCommands() {
 	// Iterate over all configured hosts
-	for _, host := range p.cfg.Targets.Hosts {
-		deviceID := host // Adjust based on actual host structure
+	// hosts is each the target and ports matched
+	var hosts []string
+	hosts_num := len(p.cfg.Targets.Hosts)
+	for i := 0; i < hosts_num; i++ {
+		hosts = append(hosts, fmt.Sprintf("%s:%s", p.cfg.Targets.Hosts[i], p.cfg.Targets.Ports[i]))
+	}
 
+	for _, host := range hosts {
 		// Create a new request with the X-DeviceID header
 		req, err := http.NewRequest("GET", p.cfg.WebAPI.BaseURL+"/api/command", nil)
 		if err != nil {
 			p.logger.Error("failed to create request", "error", err)
 			continue
 		}
-		req.Header.Set("X-DeviceID", deviceID)
+		req.Header.Set("X-DeviceID", host)
 
 		resp, err := p.client.Do(req)
 		if err != nil {
@@ -78,40 +88,59 @@ func (p *CommandPoller) pollCommands() {
 		}
 
 		var commands []Command
-		p.logger.Info("received commands", "host", host)
 		if err := json.NewDecoder(resp.Body).Decode(&commands); err != nil {
 			p.logger.Error("failed to decode commands", "error", err, "host", host)
 			continue
 		}
-		p.logger.Info("processing commands", "cmds", commands)
 
 		// Process each command
 		for _, cmd := range commands {
-			hostAddr, port, err := net.SplitHostPort(cmd.Device)
-			if err != nil {
-				p.logger.Error("invalid device address", "device", cmd.Device, "error", err)
+			// Skip empty commands
+			if cmd.Command == "" {
+				p.logger.Warn("skipping empty command", "device", cmd.Device)
 				continue
 			}
 
-			if err := p.sendCommand(hostAddr, port, cmd.Command); err != nil {
-				p.logger.Error("failed to send command", "device", cmd.Device, "error", err)
-				continue
+			// Only process commands for the current host
+			targetHost := cmd.Device
+			if targetHost == host {
+				p.logger.Infof("processing command", "command", cmd.Command, "host", host)
+				if err := p.sendCommand(host, cmd.Command); err != nil {
+					p.logger.Error("failed to send command", "error", err, "host", host)
+				} else {
+					p.logger.Infof("successfully sent command", "command", cmd.Command, "host", host)
+				}
 			}
 		}
 	}
 }
 
-func (p *CommandPoller) sendCommand(host, port, command string) error {
+func (p *CommandPoller) sendCommand(host, command string) error {
 	// Connect to device
-	conn, err := net.Dial("tcp", net.JoinHostPort(host, port))
+	// remove :port from host
+	hostname := strings.Split(host, ":")[0]
+	port := strings.Split(host, ":")[1]
+	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%s", hostname, port))
 	if err != nil {
 		return fmt.Errorf("failed to connect: %w", err)
 	}
 	defer conn.Close()
 
-	// Construct HTTP POST request with command
-	request := fmt.Sprintf("POST /cmd HTTP/1.0\r\nContent-Length: %d\r\n\r\n%s",
-		len(command), command)
+	// Create JSON payload
+	payload := struct {
+		Command string `json:"command"`
+	}{
+		Command: command,
+	}
+
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal command: %w", err)
+	}
+
+	// Construct HTTP POST request with JSON command
+	request := fmt.Sprintf("POST /cmd HTTP/1.0\r\nContent-Type: application/json\r\nContent-Length: %d\r\n\r\n%s",
+		len(jsonData), jsonData)
 
 	// Send request
 	if _, err = conn.Write([]byte(request)); err != nil {
@@ -122,13 +151,12 @@ func (p *CommandPoller) sendCommand(host, port, command string) error {
 	response := make([]byte, 1024)
 	n, err := conn.Read(response)
 	if err != nil {
-
 		return fmt.Errorf("failed to read response: %w", err)
 	}
 
 	// Check response status
 	resp := string(response[:n])
-	if resp[:15] != "HTTP/1.1 200 OK" {
+	if !strings.HasPrefix(resp, "HTTP/1.1 200 OK") && !strings.HasPrefix(resp, "HTTP/1.0 200 OK") {
 		return fmt.Errorf("unexpected response: %s", resp)
 	}
 
