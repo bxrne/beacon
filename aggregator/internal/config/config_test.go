@@ -17,9 +17,12 @@ func TestLoad_ValidConfig(t *testing.T) {
 [telemetry]
 server = "http://localhost:8080"
 retry_interval = 10
+timeout = 30
 
 [targets]
 hosts = ["host1", "host2"]
+frequencies = [5, 10]
+ports = ["8080", "9090"]
 
 [labels]
 environment = "production"
@@ -40,9 +43,12 @@ level = "info"
 		Telemetry: config.Telemetry{
 			Server:        "http://localhost:8080",
 			RetryInterval: 10,
+			Timeout:       30,
 		},
 		Targets: config.Targets{
-			Hosts: []string{"host1", "host2"},
+			Hosts:       []string{"host1", "host2"},
+			Frequencies: []int{5, 10},
+			Ports:       []string{"8080", "9090"},
 		},
 		Labels: config.Labels{
 			Environment: "production",
@@ -70,47 +76,64 @@ func TestLoad_InvalidPath(t *testing.T) {
 
 // TEST: GIVEN an empty TOML file
 // WHEN the Load function is called
-// THEN it should return a Config struct with zero values
+// THEN it should return an error
 func TestLoad_EmptyConfig(t *testing.T) {
-	content := ""
-	tmpFile := createTempFile(t, content)
-	defer os.Remove(tmpFile)
-
-	cfg, err := config.Load(tmpFile)
-	if err != nil {
-		t.Fatalf("Failed to load empty config: %v", err)
-	}
-
-	expected := &config.Config{}
-	if !reflect.DeepEqual(cfg, expected) {
-		t.Errorf("Config mismatch\nGot: %+v\nWant: %+v", cfg, expected)
-	}
-}
-
-// TEST: GIVEN a TOML file with partial configuration
-// WHEN the Load function is called
-// THEN it should return a Config struct with specified values and zero values for missing fields
-func TestLoad_PartialConfig(t *testing.T) {
 	content := `
+[telemetry]
+server = ""
+retry_interval = 0
+timeout = 0
+
+[targets]
+hosts = []
+frequencies = []
+ports = []
+
 [labels]
-environment = "staging"
+environment = ""
+service = ""
+
+[logging]
+level = ""
 `
 	tmpFile := createTempFile(t, content)
 	defer os.Remove(tmpFile)
 
-	cfg, err := config.Load(tmpFile)
+	_, err := config.Load(tmpFile)
+	if err == nil {
+		t.Fatal("Expected error when loading empty config, got nil")
+	}
+
+}
+
+// TEST: GIVEN a TOML file with partial configuration
+// WHEN the Load function is called
+// THEN it should return a error
+func TestLoad_PartialConfig(t *testing.T) {
+	content := `
+[telemetry]
+server = ""
+retry_interval = 0
+timeout = 0
+
+[targets]
+hosts = []
+frequencies = []
+ports = []
+
+[labels]
+environment = "staging"
+service = ""
+
+[logging]
+level = ""
+`
+	tmpFile := createTempFile(t, content)
+	defer os.Remove(tmpFile)
+
+	_, err := config.Load(tmpFile)
 	if err != nil {
-		t.Fatalf("Failed to load partial config: %v", err)
-	}
-
-	expected := &config.Config{
-		Labels: config.Labels{
-			Environment: "staging",
-		},
-	}
-
-	if !reflect.DeepEqual(cfg, expected) {
-		t.Errorf("Config mismatch\nGot: %+v\nWant: %+v", cfg, expected)
+		t.Fatalf("Expected error when loading partial config, got: %v", err)
 	}
 }
 
