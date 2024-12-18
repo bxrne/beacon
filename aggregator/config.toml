@@ -3,8 +3,9 @@ environment = "production"
 service = "aggregator"
 
 [telemetry]
-server = "http://localhost:8080"
+server = "https://beacon-web.fly.dev"
 retry_interval = 5
+timeout = 10
 
 [logging]
 level = "debug"
@@ -13,8 +14,3 @@ level = "debug"
 hosts = ["192.168.149.251", "localhost"]
 ports = ["80", "80"]
 frequencies = [3, 1]
-
-[web_api]
-base_url = "http://localhost:3000"
-timeout = 10
-retries = 3

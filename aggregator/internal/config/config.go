@@ -9,6 +9,7 @@ import (
 type Telemetry struct {
 	Server        string `toml:"server"`
 	RetryInterval int    `toml:"retry_interval"`
+	Timeout       int    `toml:"timeout"`
 }
 
 type Labels struct {
@@ -31,11 +32,6 @@ type Config struct {
 	Logging   Logging   `toml:"logging"`
 	Telemetry Telemetry `toml:"telemetry"`
 	Targets   Targets   `toml:"targets"`
-	WebAPI    struct {
-		BaseURL string `toml:"base_url"`
-		Timeout int    `toml:"timeout"` // in seconds
-		Retries int    `toml:"retries"`
-	} `toml:"web_api"`
 }
 
 func Load(path string) (*Config, error) {

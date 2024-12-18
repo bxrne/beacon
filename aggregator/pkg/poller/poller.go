@@ -94,7 +94,7 @@ func (p *Poller) sendMetricsToAPI(metrics *metrics.DeviceMetrics) error {
 		return fmt.Errorf("failed to marshal metrics: %w", err)
 	}
 
-	url := fmt.Sprintf("%s/api/metric", p.cfg.WebAPI.BaseURL)
+	url := fmt.Sprintf("%s/api/metric", p.cfg.Telemetry.Server)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
@@ -104,7 +104,7 @@ func (p *Poller) sendMetricsToAPI(metrics *metrics.DeviceMetrics) error {
 	req.Header.Set("X-DeviceID", fmt.Sprintf("%v:%v", p.Host, p.Port))
 
 	client := &http.Client{
-		Timeout: time.Duration(p.cfg.WebAPI.Timeout) * time.Second,
+		Timeout: time.Duration(p.cfg.Telemetry.Timeout) * time.Second,
 	}
 
 	resp, err := client.Do(req)

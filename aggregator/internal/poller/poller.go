@@ -115,7 +115,7 @@ func (p *Poller) extractPayload(data []byte) ([]byte, error) {
 }
 
 func (p *Poller) sendMetricsToAPI(host string, payload []byte) error {
-	req, err := http.NewRequest("POST", p.cfg.WebAPI.BaseURL+"/metrics", bytes.NewBuffer(payload))
+	req, err := http.NewRequest("POST", p.cfg.Telemetry.Server+"/metrics", bytes.NewBuffer(payload))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
@@ -124,7 +124,7 @@ func (p *Poller) sendMetricsToAPI(host string, payload []byte) error {
 	req.Header.Set("X-DeviceID", host)
 
 	client := &http.Client{
-		Timeout: time.Duration(p.cfg.WebAPI.Timeout) * time.Second,
+		Timeout: time.Duration(p.cfg.Telemetry.Timeout) * time.Second,
 	}
 
 	resp, err := client.Do(req)

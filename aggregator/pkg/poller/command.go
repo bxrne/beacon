@@ -68,7 +68,7 @@ func (p *CommandPoller) pollCommands() {
 
 	for _, host := range hosts {
 		// Create a new request with the X-DeviceID header
-		req, err := http.NewRequest("GET", p.cfg.WebAPI.BaseURL+"/api/command", nil)
+		req, err := http.NewRequest("GET", p.cfg.Telemetry.Server+"/api/command", nil)
 		if err != nil {
 			p.logger.Error("failed to create request", "error", err)
 			continue
@@ -189,7 +189,7 @@ func (p *CommandPoller) updateCommandStatus(device, command, status string) erro
 	}
 
 	// Send request to update command status
-	req, err := http.NewRequest("POST", p.cfg.WebAPI.BaseURL+"/api/command/status", strings.NewReader(string(jsonData)))
+	req, err := http.NewRequest("POST", p.cfg.Telemetry.Server+"/api/command/status", strings.NewReader(string(jsonData)))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
