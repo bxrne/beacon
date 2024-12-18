@@ -4,7 +4,7 @@ disk_paths = ["/"]
 
 [labels]
 environment = "production"
-service = "beacon-daemon-test"
+service = "beacon-daemon"
 
 [logging]
 level = "debug"

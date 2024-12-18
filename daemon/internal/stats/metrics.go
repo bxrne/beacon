@@ -2,7 +2,6 @@ package stats
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"sort"
@@ -60,7 +59,6 @@ func CollectMetrics() (*DeviceMetrics, error) {
 	var hostMon HostMon = HostMon{}
 
 	// Collect memory usage
-	log.Println("Collecting memory usage...")
 	vmStat, err := memoryMon.VirtualMemory()
 	if err != nil {
 		return nil, err
@@ -71,10 +69,8 @@ func CollectMetrics() (*DeviceMetrics, error) {
 		Unit:       "%",
 		RecordedAt: time.Now().UTC().Format(time.RFC3339),
 	})
-	log.Println("Memory usage collected.")
 
 	// Collect disk usage
-	log.Println("Collecting disk usage...")
 	diskUsage, err := diskMon.Usage("/")
 	if err != nil {
 		return nil, err
@@ -85,10 +81,8 @@ func CollectMetrics() (*DeviceMetrics, error) {
 		Unit:       "%",
 		RecordedAt: time.Now().UTC().Format(time.RFC3339),
 	})
-	log.Println("Disk usage collected.")
 
 	// Collect uptime
-	log.Println("Collecting uptime...")
 	uptime, err := hostMon.Uptime()
 	if err != nil {
 		return nil, err
@@ -99,7 +93,6 @@ func CollectMetrics() (*DeviceMetrics, error) {
 		Unit:       "seconds",
 		RecordedAt: time.Now().UTC().Format(time.RFC3339),
 	})
-	log.Println("Uptime collected.")
 
 	return &deviceMetrics, nil
 }
