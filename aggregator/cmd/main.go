@@ -5,7 +5,7 @@ import (
 
 	"github.com/bxrne/beacon/aggregator/internal/config"
 	"github.com/bxrne/beacon/aggregator/internal/logger"
-	"github.com/bxrne/beacon/aggregator/pkg/poller"
+	"github.com/bxrne/beacon/aggregator/internal/poller"
 )
 
 func main() {

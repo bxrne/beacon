@@ -4,7 +4,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bxrne/beacon/aggregator/pkg/metrics"
+	metrics "github.com/bxrne/beacon/aggregator/pkg/types"
 )
 
 func parseMetrics(response []byte) (*metrics.DeviceMetrics, error) {

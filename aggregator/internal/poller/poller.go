@@ -2,126 +2,106 @@ package poller
 
 import (
 	"bytes"
-	"errors"
+	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"time"
 
+	"github.com/bxrne/beacon/aggregator/internal/bproto"
 	"github.com/bxrne/beacon/aggregator/internal/config"
+	"github.com/bxrne/beacon/aggregator/internal/logger"
+	metrics "github.com/bxrne/beacon/aggregator/pkg/types"
 	"github.com/charmbracelet/log"
 )
 
+// Poller is a service that will send request objects at a frequency to a host
 type Poller struct {
-	cfg    *config.Config
-	logger *log.Logger
+	Host      string
+	Port      string
+	Frequency int
+	logger    *log.Logger
+	cfg       *config.Config
 }
 
-func NewPoller(cfg *config.Config, logger *log.Logger) *Poller {
+func NewPoller(host, port string, frequency int, cfg *config.Config) *Poller {
+	log := logger.NewLogger(cfg)
 	return &Poller{
-		cfg:    cfg,
-		logger: logger,
+		Host:      host,
+		Port:      port,
+		Frequency: frequency,
+		logger:    log,
+		cfg:       cfg,
 	}
 }
 
+// Start begins the polling process
 func (p *Poller) Start() {
-	for _, host := range p.cfg.Targets.Hosts {
-		go p.pollHost(host)
-	}
-}
-
-func (p *Poller) pollHost(host string) {
 	for {
-		conn, err := net.Dial("tcp", host)
-		if err != nil {
-			p.logger.Errorf("Failed to connect to %s: %v", host, err)
-			time.Sleep(time.Duration(p.cfg.Telemetry.RetryInterval) * time.Second)
-			continue
-		}
-
-		p.logger.Debugf("Connected to %s", host)
-
-		buf := make([]byte, 1024)
-		n, err := conn.Read(buf)
-		if err != nil {
-			p.logger.Errorf("Failed to read from %s: %v", host, err)
-			conn.Close()
-			time.Sleep(time.Duration(p.cfg.Telemetry.RetryInterval) * time.Second)
-			continue
-		}
-
-		p.logger.Debugf("Received %d bytes from %s", n, host)
-
-		payload, err := p.extractPayload(buf)
-		if err != nil {
-			p.logger.Errorf("Failed to parse metrics from %s: %v", host, err)
-			conn.Close()
-			time.Sleep(time.Duration(p.cfg.Telemetry.RetryInterval) * time.Second)
-			continue
-		}
-
-		if err := p.sendMetricsToAPI(host, payload); err != nil {
-			p.logger.Errorf("Failed to send metrics to API: %v", err)
-		}
-
-		conn.Close()
-		time.Sleep(time.Duration(p.cfg.Telemetry.RetryInterval) * time.Second)
+		p.sendRequest()
+		time.Sleep(time.Duration(p.Frequency) * time.Second)
 	}
 }
 
-func (p *Poller) extractPayload(data []byte) ([]byte, error) {
-	if len(data) < 3 {
-		return nil, errors.New("invalid response format: payload too short")
+// sendRequest sends to host
+func (p *Poller) sendRequest() {
+	conn, err := net.Dial("tcp", net.JoinHostPort(p.Host, p.Port))
+	if err != nil {
+		p.logger.Errorf("Failed to connect to %s:%s: %v\n", p.Host, p.Port, err)
+		return
+	}
+	defer conn.Close()
+
+	// Send GET /metric request
+	request := "GET /metric HTTP/1.0\r\n\r\n"
+	_, err = conn.Write([]byte(request))
+	if err != nil {
+		p.logger.Errorf("Failed to send request to %s:%s: %v", p.Host, p.Port, err)
+		return
 	}
 
-	// Log the raw payload for debugging
-	p.logger.Debug("Raw payload", "data", fmt.Sprintf("%x", data))
-
-	// Check for daemon format (STX + LEN + PAYLOAD + ETX)
-	if data[0] == 0x02 {
-		if data[len(data)-1] != 0x03 {
-			return nil, errors.New("invalid response format: missing ETX")
-		}
-		length := int(data[1])
-		if len(data) < length+3 {
-			return nil, errors.New("invalid payload length")
-		}
-
-		// Extract payload without STX, length byte, and ETX
-		payload := make([]byte, length)
-		copy(payload, data[2:2+length])
-		return payload, nil
+	// Receive response
+	response := make([]byte, 1024)
+	n, err := conn.Read(response)
+	if err != nil {
+		p.logger.Errorf("Failed to read response from %s:%s: %v", p.Host, p.Port, err)
+		return
 	}
 
-	// Check for HTTP response format
-	if string(data[:4]) == "HTTP" {
-		parts := bytes.Split(data, []byte("\r\n\r\n"))
-		if len(parts) != 2 {
-			return nil, errors.New("invalid HTTP response format")
-		}
-		payload := parts[1]
-
-		// Remove the end byte if it exists
-		if len(payload) > 0 && payload[len(payload)-1] == 0x03 {
-			payload = payload[:len(payload)-1]
-		}
-
-		return payload, nil
+	_, err = bproto.ParseResponse(response)
+	if err != nil {
+		p.logger.Errorf("Failed to parse response from %s:%s: %v", p.Host, p.Port, err)
+		return
 	}
 
-	// If not a recognized format, return as-is
-	return data, nil
+	p.logger.Debugf("Received %d bytes from %s:%s", n, p.Host, p.Port)
+
+	metrics, err := parseMetrics(response)
+	if err != nil {
+		p.logger.Errorf("Failed to parse metrics from %s:%s: %v", p.Host, p.Port, err)
+		return
+	}
+
+	if err := p.sendMetricsToAPI(metrics); err != nil {
+		p.logger.Errorf("Failed to send metrics to API: %v", err)
+		return
+	}
 }
 
-func (p *Poller) sendMetricsToAPI(host string, payload []byte) error {
-	req, err := http.NewRequest("POST", p.cfg.Telemetry.Server+"/metrics", bytes.NewBuffer(payload))
+func (p *Poller) sendMetricsToAPI(metrics *metrics.DeviceMetrics) error {
+	jsonData, err := json.Marshal(metrics)
+	if err != nil {
+		return fmt.Errorf("failed to marshal metrics: %w", err)
+	}
+
+	url := fmt.Sprintf("%s/api/metric", p.cfg.Telemetry.Server)
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-DeviceID", host)
+	req.Header.Set("X-DeviceID", fmt.Sprintf("%v:%v", p.Host, p.Port))
 
 	client := &http.Client{
 		Timeout: time.Duration(p.cfg.Telemetry.Timeout) * time.Second,
@@ -129,15 +109,17 @@ func (p *Poller) sendMetricsToAPI(host string, payload []byte) error {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to send request: %w", err)
+		return fmt.Errorf("failed to send metrics: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := ioutil.ReadAll(resp.Body)
-		p.logger.Errorf("Unexpected status code: %d, response body: %s", resp.StatusCode, string(body))
 		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
 	return nil
+}
+
+func (p *Poller) Stop() {
+	p.logger.Info("Stopping poller")
 }

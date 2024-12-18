@@ -10,7 +10,7 @@ import (
 
 type Metric struct {
 	Type       string `json:"type"`
-	Value      string `json:"value"` // Changed from float64 to string on read
+	Value      string `json:"value"`
 	Unit       string `json:"unit"`
 	RecordedAt string `json:"recorded_at"`
 }
