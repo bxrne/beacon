@@ -10,6 +10,6 @@ retry_interval = 5
 level = "debug"
 
 [targets]
-hosts = ["192.168.149.251"]
-ports = ["80"]
-frequencies = [1]
+hosts = ["192.168.149.251", "localhost"]
+ports = ["80", "4000"]
+frequencies = [1, 1]

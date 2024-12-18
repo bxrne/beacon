@@ -9,7 +9,5 @@ service = "beacon-daemon-test"
 [logging]
 level = "debug"
 
-[telemetry]
-server = "https://beacon-web.fly.dev/api"
-retry_interval = 5
-interval = 10
+[server]
+port = 4000
