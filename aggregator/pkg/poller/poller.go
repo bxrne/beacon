@@ -1,12 +1,17 @@
 package poller
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
 	"net"
+	"net/http"
 	"time"
 
 	"github.com/bxrne/beacon/aggregator/internal/config"
 	"github.com/bxrne/beacon/aggregator/internal/logger"
 	"github.com/bxrne/beacon/aggregator/pkg/bproto"
+	"github.com/bxrne/beacon/aggregator/pkg/metrics"
 	"github.com/charmbracelet/log"
 )
 
@@ -16,6 +21,7 @@ type Poller struct {
 	Port      string
 	Frequency int
 	logger    *log.Logger
+	cfg       *config.Config
 }
 
 func NewPoller(host, port string, frequency int, cfg *config.Config) *Poller {
@@ -25,6 +31,7 @@ func NewPoller(host, port string, frequency int, cfg *config.Config) *Poller {
 		Port:      port,
 		Frequency: frequency,
 		logger:    log,
+		cfg:       cfg,
 	}
 }
 
@@ -68,4 +75,47 @@ func (p *Poller) sendRequest() {
 	}
 
 	p.logger.Debugf("Received %d bytes from %s:%s", n, p.Host, p.Port)
+
+	metrics, err := parseMetrics(response)
+	if err != nil {
+		p.logger.Errorf("Failed to parse metrics from %s:%s: %v", p.Host, p.Port, err)
+		return
+	}
+
+	if err := p.sendMetricsToAPI(metrics); err != nil {
+		p.logger.Errorf("Failed to send metrics to API: %v", err)
+		return
+	}
+}
+
+func (p *Poller) sendMetricsToAPI(metrics *metrics.DeviceMetrics) error {
+	jsonData, err := json.Marshal(metrics)
+	if err != nil {
+		return fmt.Errorf("failed to marshal metrics: %w", err)
+	}
+
+	url := fmt.Sprintf("%s/api/metric", p.cfg.WebAPI.BaseURL)
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-DeviceID", p.Host)
+
+	client := &http.Client{
+		Timeout: time.Duration(p.cfg.WebAPI.Timeout) * time.Second,
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to send metrics: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	return nil
 }

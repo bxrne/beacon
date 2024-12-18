@@ -204,7 +204,6 @@ void TCPServerTask(void *pvParameters)
     }
     else if (strstr(rx_buffer, "GET /metric") != NULL)
     {
-      char response[512];
       char payload[256];
 
       // Get the current light states and time
@@ -215,7 +214,7 @@ void TCPServerTask(void *pvParameters)
       char time_str[64];
       get_current_time_utc(time_str, sizeof(time_str));
 
-      snprintf(payload, sizeof(payload), "car_light: %s, ped_light: %s, recorded_at: %s\n",
+      snprintf(payload, sizeof(payload), "car_light: %s, ped_light: %s, recorded_at: %s",
                car_light_str, ped_light_str, time_str);
 
       // Create the custom protocol response

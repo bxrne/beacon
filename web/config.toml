@@ -19,8 +19,8 @@ dsn = "core.db"
 
 [metrics]
 types = [
-  "cpu_usage",
-  "disk_usage",
+  "memory_used",
+  "disk_used",
   "uptime",
   "traffic_light",
   "crossing_light",
