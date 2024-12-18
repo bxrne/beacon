@@ -15,7 +15,7 @@ allowed_origins = ["*"]
 cache_ttl = 60
 
 [database]
-dsn = "core.db"
+dsn = "/data/demo.db"
 
 [metrics]
 types = ["memory_used", "disk_used", "uptime", "car_light", "ped_light"]

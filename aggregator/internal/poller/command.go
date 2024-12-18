@@ -104,7 +104,7 @@ func (p *CommandPoller) pollCommands() {
 			// Only process commands for the current host
 			targetHost := cmd.Device
 			if targetHost == host {
-				p.logger.Infof("processing command", "command", cmd.Command, "host", host)
+				p.logger.Info("processing command", "command", cmd.Command, "host", host)
 				if err := p.sendCommand(host, cmd.Command); err != nil {
 					p.logger.Error("failed to send command", "error", err, "host", host)
 					// Update command status to "failed"
@@ -112,7 +112,7 @@ func (p *CommandPoller) pollCommands() {
 						p.logger.Error("failed to update command status", "error", err, "host", host)
 					}
 				} else {
-					p.logger.Infof("successfully sent command", "command", cmd.Command, "host", host)
+					p.logger.Info("successfully sent command", "command", cmd.Command, "host", host)
 					// Update command status to "completed"
 					if err := p.updateCommandStatus(host, cmd.Command, "completed"); err != nil {
 						p.logger.Error("failed to update command status", "error", err, "host", host)

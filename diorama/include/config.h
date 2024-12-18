@@ -25,4 +25,5 @@
 #define PED_GREEN_DURATION 7000
 #define PED_BUTTON_PIN 25 // Button to request pedestrian light
 
-#endif // CONFIG_H
+#define BUFFER_SIZE 10 // Number of elements in the circular buffer (redundancy)
+#endif                 // CONFIG_H

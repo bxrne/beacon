@@ -112,7 +112,7 @@ void app_main(void)
     init_gpio();
     init_ped_request();
     wifi_init();
-    init_metrics_buffers(10); // Initialize metrics buffers
+    init_metrics_buffers(BUFFER_SIZE); // Initialize metrics buffers
 
     xTaskCreate(TrafficLightTask, "TrafficLightTask", 2048, NULL, 1, NULL);
     xTaskCreate(PedestrianRequestTask, "PedestrianRequestTask", 2048, NULL, 1, NULL);

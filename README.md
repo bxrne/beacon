@@ -4,8 +4,9 @@ Monitoring and analysing multiple device metrics from a cloud dashboard.
 
 | Deliverable | Stack | Function | Status |
 | --- | --- | --- | --- |
-| [daemon](daemon/) | Go 1.23 | Collect device metrics and send to web | [![Daemon CI](https://github.com/bxrne/beacon/actions/workflows/daemon-ci.yaml/badge.svg)](https://github.com/bxrne/beacon/actions/workflows/daemon-ci.yaml) |
-| [web](web/) | Go 1.23 | Receive metrics from daemons and store | [![CI](https://github.com/bxrne/beacon/actions/workflows/web-ci.yaml/badge.svg)](https://github.com/bxrne/beacon/actions/workflows/web-ci.yaml) | 
+| [daemon](daemon/) | Go 1.23 | Serve metrics to Aggregator and run commands from Aggregator | [![Daemon CI](https://github.com/bxrne/beacon/actions/workflows/daemon-ci.yaml/badge.svg)](https://github.com/bxrne/beacon/actions/workflows/daemon-ci.yaml) |
+| [web](web/) | Go 1.23 | Display metrics, command center and host API for Aggregator | [![CI](https://github.com/bxrne/beacon/actions/workflows/web-ci.yaml/badge.svg)](https://github.com/bxrne/beacon/actions/workflows/web-ci.yaml) | 
+| [aggregator](aggregator/) | Go 1.23 | Poll devices for metrics, Poll API for commands | [![Aggregator CI](https://github.com/bxrne/beacon/actions/workflows/aggregator-ci.yaml/badge.svg)](https://github.com/bxrne/beacon/actions/workflows/aggregator-ci.yaml) |
 | [diorama](diorama/) | C, FreeRTOS | Interactive diorama of pedestrian crossing | [![PlatformIO CI](https://github.com/bxrne/beacon/actions/workflows/diorama-ci.yaml/badge.svg)](https://github.com/bxrne/beacon/actions/workflows/diorama-ci.yaml) |
 
 
@@ -22,6 +23,18 @@ go run ./cmd
 go test ./...
 ```
 
+### Aggregator
+
+```sh
+cd aggregator
+go mod download
+
+go run ./cmd
+
+go test ./...
+```
+
+
 ### web
 
 ```sh
@@ -35,17 +48,6 @@ go test ./...
 ```
 
 ## Deployment
-
-### Daemon
-
-```sh
-cd daemon
-
-go build -o beacon-daemon ./cmd
-./beacon-daemon
-
-TODO: Add systemd service file
-```
 
 ### web
 
