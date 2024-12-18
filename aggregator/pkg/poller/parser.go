@@ -70,15 +70,17 @@ func parseMetrics(response []byte) (*metrics.DeviceMetrics, error) {
 
 func determineUnit(metricType string) string {
 	switch metricType {
-	case "cpu_usage", "memory_used", "disk_used":
+	case "memory_used":
+		return "percent"
+	case "disk_used":
 		return "percent"
 	case "uptime":
 		return "seconds"
-	case "traffic_light", "crossing_light":
+	case "car_light":
 		return "color"
-	case "crossing_button":
-		return "bool"
+	case "ped_light":
+		return "color"
 	default:
-		return ""
+		return "unknown"
 	}
 }
