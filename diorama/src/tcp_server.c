@@ -9,6 +9,8 @@
 #include "driver/gpio.h"
 #include "config.h"
 #define TAG "TCP_SERVER"
+#define START_BYTE 0x02
+#define END_BYTE 0x03
 
 // INFO: Custom Protocol Design:
 // - Start Byte: 0x02
@@ -216,15 +218,15 @@ void TCPServerTask(void *pvParameters)
       snprintf(payload, sizeof(payload), "car_light: %s, ped_light: %s, recorded_at: %s\n",
                car_light_str, ped_light_str, time_str);
 
-      snprintf(response, sizeof(response),
-               "HTTP/1.1 200 OK\r\n"
-               "Content-Type: text/plain\r\n"
-               "Content-Length: %d\r\n"
-               "\r\n"
-               "%s",
-               strlen(payload), payload);
+      // Create the custom protocol response
+      char custom_response[512];
+      int payload_length = strlen(payload);
+      custom_response[0] = START_BYTE;
+      custom_response[1] = payload_length;
+      memcpy(&custom_response[2], payload, payload_length);
+      custom_response[2 + payload_length] = END_BYTE;
 
-      send(sock, response, strlen(response), 0);
+      send(sock, custom_response, 3 + payload_length, 0);
     }
     else if (strstr(rx_buffer, "GET / ") != NULL) // Sanity check
     {
@@ -232,10 +234,10 @@ void TCPServerTask(void *pvParameters)
       const char *payload = "Hello, World!";
       uint8_t payload_length = strlen(payload);
 
-      response[0] = 0x02;           // Start Byte
+      response[0] = START_BYTE;     // Start Byte
       response[1] = payload_length; // Length Byte
       memcpy(&response[2], payload, payload_length);
-      response[2 + payload_length] = 0x03; // End Byte
+      response[2 + payload_length] = END_BYTE; // End Byte
       ESP_LOGI(TAG, "Sending payload: %s", payload);
       send(sock, response, 3 + payload_length, 0);
     }

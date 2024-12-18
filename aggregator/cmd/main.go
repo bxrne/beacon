@@ -18,7 +18,7 @@ func main() {
 
 	pollers := make([]*poller.Poller, 0)
 	for i := 0; i < len(cfg.Targets.Hosts); i++ {
-		p := poller.NewPoller(cfg.Targets.Hosts[i], cfg.Targets.Ports[i], cfg.Targets.Frequencies[i])
+		p := poller.NewPoller(cfg.Targets.Hosts[i], cfg.Targets.Ports[i], cfg.Targets.Frequencies[i], cfg)
 		pollers = append(pollers, p)
 		log.Infof("Created poller for host %s with frequency %d", p.Host, p.Frequency)
 	}

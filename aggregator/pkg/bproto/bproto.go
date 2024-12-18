@@ -1,27 +1,48 @@
 package bproto
 
 import (
+	"bytes"
 	"fmt"
 )
 
-// Note: The byte-aligned protocol is not used when requesting /metric.
-// It is retained here in case it's needed for other endpoints.
+const (
+	StartByte = 0x02
+	EndByte   = 0x03
+)
 
 // ParseResponse parses the response according to the byte-aligned protocol.
 func ParseResponse(response []byte) (string, error) {
-	if len(response) < 3 {
-		return "", fmt.Errorf("response too short")
+	// Find the end of the HTTP headers
+	headersEnd := bytes.Index(response, []byte("\r\n\r\n"))
+	var payload []byte
+
+	if headersEnd != -1 {
+		// Skip the headers
+		payloadStart := headersEnd + 4
+		if len(response) <= payloadStart {
+			return "", fmt.Errorf("response too short after headers")
+		}
+		payload = response[payloadStart:]
+	} else {
+		// No headers found, assume the response is the payload
+		payload = response
 	}
-	if response[0] != 0x02 {
-		return "", fmt.Errorf("invalid start byte")
+
+	if payload[0] != StartByte {
+		return "", fmt.Errorf("invalid start byte, got %x instead of %x", payload[0], StartByte)
 	}
-	length := int(response[1])
-	if length != len(response)-3 {
-		return "", fmt.Errorf("length byte does not match payload length")
+
+	length := int(payload[1])
+
+	// Check if we have enough bytes for the full message
+	if len(payload) < length+3 {
+		return "", fmt.Errorf("response too short for declared length")
 	}
-	payload := response[2 : 2+length]
-	if response[2+length] != 0x03 {
-		return "", fmt.Errorf("invalid end byte")
+
+	if payload[length+2] != EndByte {
+		return "", fmt.Errorf("invalid end byte, got %x instead of %x", payload[length+2], EndByte)
 	}
-	return string(payload), nil
+
+	actualPayload := payload[2 : 2+length]
+	return string(actualPayload), nil
 }

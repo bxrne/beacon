@@ -11,15 +11,14 @@ import (
 
 type Metric struct {
 	Type       string `json:"type"`
-	Value      string `json:"value"` // Changed from float64 to string
+	Value      string `json:"value"` // Changed from float64 to string on read
 	Unit       string `json:"unit"`
-	RecordedAt string `json:"recorded_at"` // WARN: Daemon only field
+	RecordedAt string `json:"recorded_at"`
 }
 
 type DeviceMetrics struct {
 	Metrics  []Metric `json:"metrics"`
-	Hostname string   `json:"hostname"` // WARN: Daemon only field
-
+	Hostname string   `json:"hostname"`
 }
 
 func (d *DeviceMetrics) String() string {

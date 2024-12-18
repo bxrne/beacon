@@ -1,26 +1,30 @@
 package poller
 
 import (
-	"fmt"
 	"net"
-	"strings"
 	"time"
-)
 
-// Poller is a service that will send request objects at a frequency to a host
+	"github.com/bxrne/beacon/aggregator/internal/config"
+	"github.com/bxrne/beacon/aggregator/internal/logger"
+	"github.com/bxrne/beacon/aggregator/pkg/bproto"
+	"github.com/charmbracelet/log"
+)
 
 // Poller is a service that will send request objects at a frequency to a host
 type Poller struct {
 	Host      string
 	Port      string
 	Frequency int
+	logger    *log.Logger
 }
 
-func NewPoller(host, port string, frequency int) *Poller {
+func NewPoller(host, port string, frequency int, cfg *config.Config) *Poller {
+	log := logger.NewLogger(cfg)
 	return &Poller{
 		Host:      host,
 		Port:      port,
 		Frequency: frequency,
+		logger:    log,
 	}
 }
 
@@ -32,11 +36,11 @@ func (p *Poller) Start() {
 	}
 }
 
-// sendRequest sends the request object to the host
+// sendRequest sends to host
 func (p *Poller) sendRequest() {
 	conn, err := net.Dial("tcp", net.JoinHostPort(p.Host, p.Port))
 	if err != nil {
-		fmt.Printf("Failed to connect to %s:%s - %v\n", p.Host, p.Port, err)
+		p.logger.Errorf("Failed to connect to %s:%s: %v\n", p.Host, p.Port, err)
 		return
 	}
 	defer conn.Close()
@@ -45,7 +49,7 @@ func (p *Poller) sendRequest() {
 	request := "GET /metric HTTP/1.0\r\n\r\n"
 	_, err = conn.Write([]byte(request))
 	if err != nil {
-		fmt.Printf("Failed to send request: %v\n", err)
+		p.logger.Errorf("Failed to send request to %s:%s: %v", p.Host, p.Port, err)
 		return
 	}
 
@@ -53,22 +57,15 @@ func (p *Poller) sendRequest() {
 	response := make([]byte, 1024)
 	n, err := conn.Read(response)
 	if err != nil {
-		fmt.Printf("Failed to read response: %v\n", err)
+		p.logger.Errorf("Failed to read response from %s:%s: %v", p.Host, p.Port, err)
 		return
 	}
-	responseStr := string(response[:n])
 
-	// Parse the response
-	if idx := strings.Index(responseStr, "\r\n\r\n"); idx != -1 {
-		payload := responseStr[idx+4:]
-		fmt.Printf("Received payload from %s:%s - %s\n", p.Host, p.Port, payload)
-	} else {
-		// No headers, assume entire response is payload
-		fmt.Printf("Received payload from %s:%s - %s\n", p.Host, p.Port, responseStr)
+	_, err = bproto.ParseResponse(response)
+	if err != nil {
+		p.logger.Errorf("Failed to parse response from %s:%s: %v", p.Host, p.Port, err)
+		return
 	}
-}
 
-// Stop ends the polling process
-func (p *Poller) Stop() {
-	// Implement stop logic if needed
+	p.logger.Debugf("Received %d bytes from %s:%s", n, p.Host, p.Port)
 }
