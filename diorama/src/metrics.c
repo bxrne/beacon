@@ -76,6 +76,15 @@ LightColor get_recent_ped_light_state()
   return state;
 }
 
+void get_current_time_utc(char *buffer, size_t buffer_size)
+{
+  time_t now;
+  time(&now);
+  struct tm timeinfo;
+  gmtime_r(&now, &timeinfo);
+  strftime(buffer, buffer_size, "%Y-%m-%dT%H:%M:%SZ", &timeinfo);
+}
+
 void free_metrics_buffers()
 {
   if (car_light_buffer)

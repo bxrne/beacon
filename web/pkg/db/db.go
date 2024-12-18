@@ -62,6 +62,33 @@ func migrate(db *gorm.DB, cfg *config.Config) error {
 		db.FirstOrCreate(&metricType, MetricType{Name: metricType.Name})
 	}
 
+	// Update existing metrics for 'car_light' and 'ped_light' to have unit 'color'
+
+	var colorUnit Unit
+	if err := db.First(&colorUnit, "name = ?", "color").Error; err != nil {
+		return fmt.Errorf("failed to find 'color' unit: %w", err)
+	}
+
+	// Fetch MetricType IDs for 'car_light' and 'ped_light'
+	var metricTypes []MetricType
+	if err := db.Where("name IN ?", []string{"car_light", "ped_light"}).Find(&metricTypes).Error; err != nil {
+		return fmt.Errorf("failed to fetch metric types: %w", err)
+	}
+
+	var metricTypeIDs []uint
+	for _, mt := range metricTypes {
+		metricTypeIDs = append(metricTypeIDs, mt.ID)
+	}
+
+	if len(metricTypeIDs) == 0 {
+		return fmt.Errorf("no metric types found for 'car_light' and 'ped_light'")
+	}
+
+	// Update metrics where type_id is in the fetched IDs
+	if err := db.Model(&Metric{}).Where("type_id IN ?", metricTypeIDs).Update("unit_id", colorUnit.ID).Error; err != nil {
+		return fmt.Errorf("failed to update metrics unit: %w", err)
+	}
+
 	return nil
 }
 

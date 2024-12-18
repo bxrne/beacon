@@ -1,0 +1,20 @@
+[labels]
+environment = "production"
+service = "aggregator"
+
+[telemetry]
+server = "http://localhost:8080"
+retry_interval = 5
+
+[logging]
+level = "debug"
+
+[targets]
+hosts = ["192.168.149.251", "localhost"]
+ports = ["80", "4000"]
+frequencies = [3, 1]
+
+[web_api]
+base_url = "http://localhost:3000"
+timeout = 10
+retries = 3

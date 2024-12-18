@@ -4,12 +4,10 @@ disk_paths = ["/"]
 
 [labels]
 environment = "production"
-service = "beacon-daemon-test"
+service = "beacon-daemon"
 
 [logging]
 level = "debug"
 
-[telemetry]
-server = "https://beacon-web.fly.dev/api"
-retry_interval = 5
-interval = 10
+[server]
+port = 4000

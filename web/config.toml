@@ -18,12 +18,5 @@ cache_ttl = 60
 dsn = "core.db"
 
 [metrics]
-types = [
-  "cpu_usage",
-  "disk_usage",
-  "uptime",
-  "traffic_light",
-  "crossing_light",
-  "crossing_button",
-]
-units = ["percent", "seconds", "color", "bool"]
+types = ["memory_used", "disk_used", "uptime", "car_light", "ped_light"]
+units = ["percent", "seconds", "color"]

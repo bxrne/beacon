@@ -9,6 +9,8 @@
 #include "driver/gpio.h"
 #include "config.h"
 #define TAG "TCP_SERVER"
+#define START_BYTE 0x02
+#define END_BYTE 0x03
 
 // INFO: Custom Protocol Design:
 // - Start Byte: 0x02
@@ -202,7 +204,6 @@ void TCPServerTask(void *pvParameters)
     }
     else if (strstr(rx_buffer, "GET /metric") != NULL)
     {
-      char response[512];
       char payload[256];
 
       // Get the current light states and time
@@ -210,25 +211,21 @@ void TCPServerTask(void *pvParameters)
       LightColor ped_light_state = get_recent_ped_light_state();
       const char *car_light_str = light_color_to_string(car_light_state);
       const char *ped_light_str = light_color_to_string(ped_light_state);
-      time_t now;
-      time(&now);
-      struct tm timeinfo;
-      localtime_r(&now, &timeinfo);
       char time_str[64];
-      strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", &timeinfo);
+      get_current_time_utc(time_str, sizeof(time_str));
 
-      snprintf(payload, sizeof(payload), "car_light: %s, ped_light: %s, recorded_at: %s\n",
+      snprintf(payload, sizeof(payload), "car_light: %s, ped_light: %s, recorded_at: %s",
                car_light_str, ped_light_str, time_str);
 
-      snprintf(response, sizeof(response),
-               "HTTP/1.1 200 OK\r\n"
-               "Content-Type: text/plain\r\n"
-               "Content-Length: %d\r\n"
-               "\r\n"
-               "%s",
-               strlen(payload), payload);
+      // Create the custom protocol response
+      char custom_response[512];
+      int payload_length = strlen(payload);
+      custom_response[0] = START_BYTE;
+      custom_response[1] = payload_length;
+      memcpy(&custom_response[2], payload, payload_length);
+      custom_response[2 + payload_length] = END_BYTE;
 
-      send(sock, response, strlen(response), 0);
+      send(sock, custom_response, 3 + payload_length, 0);
     }
     else if (strstr(rx_buffer, "GET / ") != NULL) // Sanity check
     {
@@ -236,10 +233,10 @@ void TCPServerTask(void *pvParameters)
       const char *payload = "Hello, World!";
       uint8_t payload_length = strlen(payload);
 
-      response[0] = 0x02;           // Start Byte
+      response[0] = START_BYTE;     // Start Byte
       response[1] = payload_length; // Length Byte
       memcpy(&response[2], payload, payload_length);
-      response[2 + payload_length] = 0x03; // End Byte
+      response[2 + payload_length] = END_BYTE; // End Byte
       ESP_LOGI(TAG, "Sending payload: %s", payload);
       send(sock, response, 3 + payload_length, 0);
     }

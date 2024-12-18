@@ -11,11 +11,6 @@ type Monitoring struct {
 	Frequency uint     `toml:"frequency"`
 }
 
-type Telemetry struct {
-	Server        string `toml:"server"`
-	RetryInterval int    `toml:"retry_interval"` // New field
-}
-
 type Labels struct {
 	Environment string `toml:"environment"`
 	Service     string `toml:"service"`
@@ -25,11 +20,16 @@ type Logging struct {
 	Level string `toml:"level"`
 }
 
+type HTTPServer struct {
+	Port    int `toml:"port"`
+	Timeout int `toml:"timeout"`
+}
+
 type Config struct {
 	Monitoring Monitoring `toml:"monitoring"`
 	Labels     Labels     `toml:"labels"`
 	Logging    Logging    `toml:"logging"`
-	Telemetry  Telemetry  `toml:"telemetry"`
+	Server     HTTPServer `toml:"server"`
 }
 
 func Load(path string) (*Config, error) {

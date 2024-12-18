@@ -2,8 +2,11 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/bxrne/beacon/web/pkg/db"
 	"github.com/bxrne/beacon/web/pkg/metrics"
@@ -29,52 +32,69 @@ type errorResponse struct {
 func (s *Server) handleMetric(w http.ResponseWriter, r *http.Request) {
 	deviceID := r.Header.Get("X-DeviceID")
 	if deviceID == "" {
-		res := errorResponse{Error: "missing device ID"}
-		s.logger.Errorf("handleMetric: %s", res.Error)
-		s.respondJSON(w, http.StatusBadRequest, res)
-		return
-	}
-
-	// Register the device if it doesn't exist
-	if err := db.RegisterDevice(s.db, deviceID); err != nil {
-		res := errorResponse{Error: "failed to register device"}
-		s.logger.Errorf("handleMetric: %s", res.Error)
-		s.respondJSON(w, http.StatusInternalServerError, res)
+		s.logger.Errorf("Missing device ID")
+		http.Error(w, "Missing device ID", http.StatusBadRequest)
 		return
 	}
 
 	var deviceMetrics metrics.DeviceMetrics
 	if err := json.NewDecoder(r.Body).Decode(&deviceMetrics); err != nil {
-		res := errorResponse{Error: "failed to decode request body"}
-		s.logger.Errorf("handleMetric: %s", res.Error)
-		s.respondJSON(w, http.StatusBadRequest, res)
+		s.logger.Errorf("Failed to decode metrics: %v", err)
+		http.Error(w, "Invalid metrics format", http.StatusBadRequest)
 		return
 	}
 
+	if err := s.persistMetrics(deviceID, deviceMetrics); err != nil {
+		s.logger.Errorf("Failed to persist metrics: %v", err)
+		http.Error(w, "Failed to persist metrics", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) persistMetrics(deviceID string, deviceMetrics metrics.DeviceMetrics) error {
 	for _, metric := range deviceMetrics.Metrics {
-		if metric.Type == "" || metric.Unit == "" || metric.Value == "" || metric.RecordedAt == "" {
-			res := errorResponse{Error: "all metric fields must be filled"}
-			s.logger.Errorf("handleMetric: %s", res.Error)
-			s.respondJSON(w, http.StatusBadRequest, res)
-			return
+		var metricType db.MetricType
+		if err := s.db.FirstOrCreate(&metricType, db.MetricType{Name: metric.Type}).Error; err != nil {
+			return err
+		}
+
+		var unit db.Unit
+		if err := s.db.FirstOrCreate(&unit, db.Unit{Name: metric.Unit}).Error; err != nil {
+			return err
+		}
+
+		var device db.Device
+		if err := s.db.FirstOrCreate(&device, db.Device{Name: deviceID}).Error; err != nil {
+			return err
+		}
+
+		// Clean up the RecordedAt string by removing any control characters
+		cleanTime := strings.Map(func(r rune) rune {
+			if r >= 32 && r != 127 { // Keep only printable characters
+				return r
+			}
+			return -1
+		}, metric.RecordedAt)
+
+		recordedAt, err := time.Parse(time.RFC3339, cleanTime)
+		if err != nil {
+			return fmt.Errorf("invalid RecordedAt format: %v (raw: %q)", err, metric.RecordedAt)
+		}
+
+		dbMetric := db.Metric{
+			TypeID:     metricType.ID,
+			Value:      metric.Value,
+			UnitID:     unit.ID,
+			DeviceID:   device.ID,
+			RecordedAt: recordedAt,
+		}
+		if err := s.db.Create(&dbMetric).Error; err != nil {
+			return err
 		}
 	}
-
-	if err := deviceMetrics.Validate(s.db); err != nil {
-		res := errorResponse{Error: "invalid metrics: " + err.Error()}
-		s.logger.Errorf("handleMetric: %s", res.Error)
-		s.respondJSON(w, http.StatusBadRequest, res)
-		return
-	}
-
-	if err := metrics.PersistMetric(s.db, deviceMetrics, deviceID); err != nil {
-		res := errorResponse{Error: "failed to persist metrics"}
-		s.logger.Errorf("handleMetric: %s", res.Error)
-		s.respondJSON(w, http.StatusBadRequest, res)
-		return
-	}
-
-	s.respondJSON(w, http.StatusOK, deviceMetrics)
+	return nil
 }
 
 // handleGetMetric godoc
@@ -220,11 +240,14 @@ func (s *Server) handleGetMetrics(w http.ResponseWriter, r *http.Request) {
 
 	var responseMetrics interface{}
 	if isChartsView {
-		// Filter for percent-based metrics and keep only the latest for each type
+		// For charts view, we want both percent and color metrics
 		latestMetrics := make(map[string]db.Metric)
 		for _, metric := range metrics {
-			if metric.Unit.Name == "percent" {
-				latestMetrics[metric.Type.Name] = metric
+			if metric.Unit.Name == "percent" || metric.Unit.Name == "color" {
+				existing, exists := latestMetrics[metric.Type.Name]
+				if !exists || metric.RecordedAt.After(existing.RecordedAt) {
+					latestMetrics[metric.Type.Name] = metric
+				}
 			}
 		}
 
@@ -232,6 +255,11 @@ func (s *Server) handleGetMetrics(w http.ResponseWriter, r *http.Request) {
 		var latestMetricsSlice []db.Metric
 		for _, metric := range latestMetrics {
 			latestMetricsSlice = append(latestMetricsSlice, metric)
+		}
+
+		// Ensure we always return an empty array instead of null
+		if latestMetricsSlice == nil {
+			latestMetricsSlice = []db.Metric{}
 		}
 		responseMetrics = latestMetricsSlice
 	} else {

@@ -83,10 +83,11 @@ body {
 
 /* Charts container */
 .charts-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    display: flex;
+    flex-wrap: wrap;
     gap: 2rem;
     margin: 2rem 0;
+    align-items: flex-start;
 }
 
 .chart-wrapper {
@@ -152,28 +153,46 @@ select {
 
 /* Gauge styles */
 .gauge {
-    background: #f1f1f1;
     border-radius: 4px;
     margin: 1rem 0;
-    position: relative;
-    height: 30px;
-    width: 100%;
+    width: 200px;
+    border: 2px solid #9b4dca;
 }
 
 .gauge-value {
     background: #9b4dca;
-    height: 100%;
     color: #fff;
-    line-height: 30px;
     text-align: center;
-    border-radius: 4px;
     transition: width 0.5s ease;
 }
 
 .gauge-label {
-    position: absolute;
-    left: 50%;
-    top: -1.5rem;
-    transform: translateX(-50%);
     font-weight: bold;
+}
+
+.color-wrapper {
+    display: inline-block;
+    text-align: center;
+    margin: 10px;
+}
+
+.color-value {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: 1px solid #eaeaea;
+    margin: 0 auto;
+}
+
+.color-label {
+    margin-top: 0.5rem;
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+.charts-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: flex-start;
 }
