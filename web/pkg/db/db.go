@@ -30,7 +30,7 @@ func NewDatabase(cfg *config.Config) (*gorm.DB, error) {
 }
 
 func migrate(db *gorm.DB, cfg *config.Config) error {
-	if err := db.AutoMigrate(&Device{}, &Unit{}, &MetricType{}, &Metric{}, &CommandType{}); err != nil {
+	if err := db.AutoMigrate(&Device{}, &Unit{}, &MetricType{}, &Metric{}, &CommandType{}, &Command{}); err != nil {
 		return err
 	}
 
@@ -78,6 +78,17 @@ func migrate(db *gorm.DB, cfg *config.Config) error {
 	}
 	for _, commandType := range commandTypes {
 		db.FirstOrCreate(&commandType, CommandType{Name: commandType.Name})
+	}
+
+	// Migrate existing CommandTypes from config
+	var commandTypesFromConfig []CommandType
+	for _, cmd := range cfg.Metrics.Commands {
+		commandTypesFromConfig = append(commandTypesFromConfig, CommandType{Name: cmd})
+	}
+	for _, cmdType := range commandTypesFromConfig {
+		if err := db.FirstOrCreate(&cmdType, CommandType{Name: cmdType.Name}).Error; err != nil {
+			return fmt.Errorf("failed to create command type: %w", err)
+		}
 	}
 
 	// Update existing metrics for 'car_light' and 'ped_light' to have unit 'color'

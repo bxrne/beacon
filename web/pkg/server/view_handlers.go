@@ -112,3 +112,19 @@ func (s *Server) getLatestMetrics(deviceID string) ([]db.Metric, error) {
 
 	return metrics, nil
 }
+
+func (s *Server) handleCommandPage(w http.ResponseWriter, r *http.Request) {
+	tmpl, err := template.ParseFiles(
+		"templates/base.html",
+		"templates/partials/device_selection.html",
+		"templates/command.html",
+	)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	err = tmpl.ExecuteTemplate(w, "base", nil)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}

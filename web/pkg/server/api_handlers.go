@@ -17,6 +17,11 @@ type errorResponse struct {
 	Error string `json:"error"`
 }
 
+type commandRequest struct {
+	Device  string `json:"device"`
+	Command string `json:"command"`
+}
+
 // handleMetric godoc
 // @Summary      Submit metrics
 // @Description  Submit metrics for a device
@@ -286,4 +291,39 @@ func (s *Server) handleGetMetrics(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.respondJSON(w, http.StatusOK, response)
+}
+
+func (s *Server) handleCommand(w http.ResponseWriter, r *http.Request) {
+	var req commandRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		s.respondJSON(w, http.StatusBadRequest, errorResponse{Error: "invalid request"})
+		return
+	}
+
+	// Check if device exists
+	var device db.Device
+	if err := s.db.First(&device, "name = ?", req.Device).Error; err != nil {
+		s.respondJSON(w, http.StatusNotFound, errorResponse{Error: "device not found"})
+		return
+	}
+
+	// Validate command against command types
+	var commandType db.CommandType
+	if err := s.db.First(&commandType, "name = ?", req.Command).Error; err != nil {
+		s.respondJSON(w, http.StatusBadRequest, errorResponse{Error: "invalid command type"})
+		return
+	}
+
+	// Create command
+	command := db.Command{
+		Name:     req.Command,
+		DeviceID: device.ID,
+	}
+
+	if err := s.db.Create(&command).Error; err != nil {
+		s.respondJSON(w, http.StatusInternalServerError, errorResponse{Error: "failed to create command"})
+		return
+	}
+
+	s.respondJSON(w, http.StatusOK, map[string]string{"status": "success"})
 }
