@@ -107,8 +107,16 @@ func (p *CommandPoller) pollCommands() {
 				p.logger.Infof("processing command", "command", cmd.Command, "host", host)
 				if err := p.sendCommand(host, cmd.Command); err != nil {
 					p.logger.Error("failed to send command", "error", err, "host", host)
+					// Update command status to "failed"
+					if err := p.updateCommandStatus(host, cmd.Command, "failed"); err != nil {
+						p.logger.Error("failed to update command status", "error", err, "host", host)
+					}
 				} else {
 					p.logger.Infof("successfully sent command", "command", cmd.Command, "host", host)
+					// Update command status to "completed"
+					if err := p.updateCommandStatus(host, cmd.Command, "completed"); err != nil {
+						p.logger.Error("failed to update command status", "error", err, "host", host)
+					}
 				}
 			}
 		}
@@ -158,6 +166,43 @@ func (p *CommandPoller) sendCommand(host, command string) error {
 	resp := string(response[:n])
 	if !strings.HasPrefix(resp, "HTTP/1.1 200 OK") && !strings.HasPrefix(resp, "HTTP/1.0 200 OK") {
 		return fmt.Errorf("unexpected response: %s", resp)
+	}
+
+	return nil
+}
+
+func (p *CommandPoller) updateCommandStatus(device, command, status string) error {
+	// Create JSON payload
+	payload := struct {
+		Device  string `json:"device"`
+		Command string `json:"command"`
+		Status  string `json:"status"`
+	}{
+		Device:  device,
+		Command: command,
+		Status:  status,
+	}
+
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal command status: %w", err)
+	}
+
+	// Send request to update command status
+	req, err := http.NewRequest("POST", p.cfg.WebAPI.BaseURL+"/api/command/status", strings.NewReader(string(jsonData)))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := p.client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to update command status: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to update command status, status code: %d", resp.StatusCode)
 	}
 
 	return nil
