@@ -132,7 +132,7 @@ level = ""
 	defer os.Remove(tmpFile)
 
 	_, err := config.Load(tmpFile)
-	if err != nil {
+	if err == nil {
 		t.Fatalf("Expected error when loading partial config, got: %v", err)
 	}
 }
