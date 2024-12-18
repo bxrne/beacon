@@ -124,6 +124,7 @@ func (s *Server) setupRoutes() {
 
 	s.router.HandleFunc("/", s.handleDashboardView).Methods(http.MethodGet)
 	s.router.HandleFunc("/charts", s.handleChartsView).Methods(http.MethodGet)
+	s.router.HandleFunc("/command", s.handleCommandPage).Methods(http.MethodGet)
 
 	s.router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	s.router.PathPrefix("/docs/").Handler(httpSwagger.WrapHandler)
@@ -139,4 +140,7 @@ func (s *Server) setupRoutes() {
 	apiRouter.HandleFunc("/metric", s.handleGetMetric).Methods(http.MethodGet)
 	apiRouter.HandleFunc("/device", s.handleGetDevices).Methods(http.MethodGet)
 	apiRouter.HandleFunc("/metrics", s.handleGetMetrics).Methods(http.MethodGet)
+	apiRouter.HandleFunc("/command", s.handleCommand).Methods(http.MethodPost)
+	apiRouter.HandleFunc("/command", s.handleGetCommands).Methods(http.MethodGet)
+	apiRouter.HandleFunc("/command/status", s.handleCommandStatus).Methods(http.MethodPost) // Change this line to use POST method
 }

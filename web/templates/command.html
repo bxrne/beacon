@@ -1,0 +1,30 @@
+{{ define "title" }}Command{{ end }}
+
+{{ define "content" }}
+<div class="container mt-4">
+    <h1>Send Command</h1>
+    <div class="row">
+        <div class="col-md-6">
+            <form id="commandForm">
+                <div class="form-group mb-3">
+                    <label for="deviceSelect">Device</label>
+                    <select class="form-control" id="deviceSelect" required>
+                        <option value="">Select a device...</option>
+                    </select>
+                </div>
+                <div class="form-group mb-3">
+                    <label for="commandInput">Command</label>
+                    <input type="text" class="form-control" id="commandInput" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Send Command</button>
+            </form>
+            <div id="errorAlert" class="alert alert-danger mt-3" style="display: none;"></div>
+            <div id="successAlert" class="alert alert-success mt-3" style="display: none;"></div>
+        </div>
+    </div>
+</div>
+{{ end }}
+
+{{ define "scripts" }}
+<script src="/static/js/command.js"></script>
+{{ end }}

@@ -30,7 +30,7 @@ func NewDatabase(cfg *config.Config) (*gorm.DB, error) {
 }
 
 func migrate(db *gorm.DB, cfg *config.Config) error {
-	if err := db.AutoMigrate(&Device{}, &Unit{}, &MetricType{}, &Metric{}); err != nil {
+	if err := db.AutoMigrate(&Device{}, &Unit{}, &MetricType{}, &Metric{}, &CommandType{}, &Command{}); err != nil {
 		return err
 	}
 
@@ -62,6 +62,35 @@ func migrate(db *gorm.DB, cfg *config.Config) error {
 		db.FirstOrCreate(&metricType, MetricType{Name: metricType.Name})
 	}
 
+	// Allowed commands via lkup table
+	var commands []CommandType
+	for _, command := range cfg.Metrics.Commands {
+		commands = append(commands, CommandType{Name: command})
+	}
+	for _, command := range commands {
+		db.FirstOrCreate(&command, CommandType{Name: command.Name})
+	}
+
+	// Populate CommandType lookup table from config
+	var commandTypes []CommandType
+	for _, commandType := range cfg.CommandTypes {
+		commandTypes = append(commandTypes, CommandType{Name: commandType.Name})
+	}
+	for _, commandType := range commandTypes {
+		db.FirstOrCreate(&commandType, CommandType{Name: commandType.Name})
+	}
+
+	// Migrate existing CommandTypes from config
+	var commandTypesFromConfig []CommandType
+	for _, cmd := range cfg.Metrics.Commands {
+		commandTypesFromConfig = append(commandTypesFromConfig, CommandType{Name: cmd})
+	}
+	for _, cmdType := range commandTypesFromConfig {
+		if err := db.FirstOrCreate(&cmdType, CommandType{Name: cmdType.Name}).Error; err != nil {
+			return fmt.Errorf("failed to create command type: %w", err)
+		}
+	}
+
 	// Update existing metrics for 'car_light' and 'ped_light' to have unit 'color'
 
 	var colorUnit Unit
@@ -87,6 +116,21 @@ func migrate(db *gorm.DB, cfg *config.Config) error {
 	// Update metrics where type_id is in the fetched IDs
 	if err := db.Model(&Metric{}).Where("type_id IN ?", metricTypeIDs).Update("unit_id", colorUnit.ID).Error; err != nil {
 		return fmt.Errorf("failed to update metrics unit: %w", err)
+	}
+
+	// Drop and recreate commands table to remove unique constraint
+	if err := db.Migrator().DropTable(&Command{}); err != nil {
+		return fmt.Errorf("failed to drop commands table: %w", err)
+	}
+	if err := db.AutoMigrate(&Command{}); err != nil {
+		return fmt.Errorf("failed to recreate commands table: %w", err)
+	}
+
+	// Create index on device_id and name for faster lookups
+	if !indexExists(db, "idx_commands_device_name") {
+		if err := db.Exec("CREATE INDEX idx_commands_device_name ON commands(device_id, name)").Error; err != nil {
+			return fmt.Errorf("failed to create command index: %w", err)
+		}
 	}
 
 	return nil

@@ -1,5 +1,21 @@
 basePath: /api/
 definitions:
+  metrics.CommandResponse:
+    properties:
+      command:
+        type: string
+      device:
+        type: string
+    type: object
+  metrics.CommandStatusRequest:
+    properties:
+      command:
+        type: string
+      device:
+        type: string
+      status:
+        type: string
+    type: object
   metrics.DeviceMetrics:
     properties:
       metrics:
@@ -21,6 +37,13 @@ definitions:
         description: Changed from float64 to string
         type: string
     type: object
+  server.commandRequest:
+    properties:
+      command:
+        type: string
+      device:
+        type: string
+    type: object
   server.errorResponse:
     properties:
       error:
@@ -37,6 +60,147 @@ info:
   title: Beacon API
   version: "1.0"
 paths:
+  /charts:
+    get:
+      consumes:
+      - application/json
+      description: Get charts view page
+      produces:
+      - text/html
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Show charts view
+      tags:
+      - charts
+  /command:
+    post:
+      consumes:
+      - application/json
+      description: Submit a command for a device
+      parameters:
+      - description: Command request
+        in: body
+        name: commandRequest
+        required: true
+        schema:
+          $ref: '#/definitions/server.commandRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/server.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/server.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/server.errorResponse'
+      summary: Submit command
+      tags:
+      - command
+  /command/status:
+    post:
+      consumes:
+      - application/json
+      description: Update the status of a command for a device
+      parameters:
+      - description: Command status request
+        in: body
+        name: commandStatusRequest
+        required: true
+        schema:
+          $ref: '#/definitions/metrics.CommandStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/server.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/server.errorResponse'
+      summary: Update command status
+      tags:
+      - command
+  /commands:
+    get:
+      description: Get pending commands for a device
+      parameters:
+      - description: Device ID
+        in: header
+        name: X-DeviceID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/metrics.CommandResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/server.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/server.errorResponse'
+      summary: Get pending commands
+      tags:
+      - command
+  /dashboard:
+    get:
+      consumes:
+      - application/json
+      description: Get dashboard view page
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      produces:
+      - text/html
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Show dashboard view
+      tags:
+      - dashboard
   /device:
     get:
       description: Find all registered devices
@@ -128,6 +292,54 @@ paths:
           schema:
             $ref: '#/definitions/server.errorResponse'
       summary: Submit metrics
+      tags:
+      - metrics
+  /metrics:
+    get:
+      description: Get metrics for a device with pagination and filtering options
+      parameters:
+      - description: Device ID
+        in: header
+        name: X-DeviceID
+        required: true
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Sort order
+        in: query
+        name: sort
+        type: string
+      - description: Metric type
+        in: query
+        name: type
+        type: string
+      - description: View type (charts)
+        in: query
+        name: view
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/server.errorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/server.errorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/server.errorResponse'
+      summary: Get metrics with pagination and filtering
       tags:
       - metrics
 swagger: "2.0"

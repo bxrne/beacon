@@ -32,3 +32,18 @@ type Metric struct {
 	Device     Device     `gorm:"foreignKey:DeviceID"`
 	RecordedAt time.Time  `gorm:"not null"`
 }
+
+type Command struct {
+	gorm.Model
+	Name     string `gorm:"not null"` // Removed unique constraint
+	DeviceID uint
+	Device   Device `gorm:"foreignKey:DeviceID"`
+	Status   string `gorm:"default:pending"`
+	SentAt   *time.Time
+	ErrorMsg string
+}
+
+type CommandType struct {
+	gorm.Model
+	Name string `gorm:"unique;not null"`
+}

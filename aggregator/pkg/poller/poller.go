@@ -101,7 +101,7 @@ func (p *Poller) sendMetricsToAPI(metrics *metrics.DeviceMetrics) error {
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-DeviceID", p.Host)
+	req.Header.Set("X-DeviceID", fmt.Sprintf("%v:%v", p.Host, p.Port))
 
 	client := &http.Client{
 		Timeout: time.Duration(p.cfg.WebAPI.Timeout) * time.Second,
@@ -118,4 +118,8 @@ func (p *Poller) sendMetricsToAPI(metrics *metrics.DeviceMetrics) error {
 	}
 
 	return nil
+}
+
+func (p *Poller) Stop() {
+	p.logger.Info("Stopping poller")
 }

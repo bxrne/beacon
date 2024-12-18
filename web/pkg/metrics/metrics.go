@@ -20,6 +20,17 @@ type DeviceMetrics struct {
 	Metrics []Metric `json:"metrics"`
 }
 
+type CommandResponse struct {
+	Device  string `json:"device"`
+	Command string `json:"command"`
+}
+
+type CommandStatusRequest struct {
+	Device  string `json:"device"`
+	Command string `json:"command"`
+	Status  string `json:"status"`
+}
+
 // ValidateMetricType checks if the metric type exists in DB
 func ValidateMetricType(gorm_db *gorm.DB, metricType string) error {
 	var exists bool

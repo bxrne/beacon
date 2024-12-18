@@ -26,7 +26,12 @@ func main() {
 	for _, p := range pollers {
 		log.Infof("Starting poller for host %s", p.Host)
 		go p.Start()
+		defer p.Stop()
 	}
+
+	commandPoller := poller.NewCommandPoller(cfg, log)
+	commandPoller.Start()
+	defer commandPoller.Stop()
 
 	select {} // Block forever
 }

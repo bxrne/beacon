@@ -30,16 +30,22 @@ type Database struct {
 }
 
 type Metrics struct {
-	Types []string `toml:"types"`
-	Units []string `toml:"units"`
+	Types    []string `toml:"types"`
+	Units    []string `toml:"units"`
+	Commands []string `toml:"commands"`
+}
+
+type CommandType struct {
+	Name string `toml:"name"`
 }
 
 type Config struct {
-	Labels   Labels   `toml:"labels"`
-	Logging  Logging  `toml:"logging"`
-	Server   Server   `toml:"server"`
-	Database Database `toml:"database"`
-	Metrics  Metrics  `toml:"metrics"`
+	Labels       Labels        `toml:"labels"`
+	Logging      Logging       `toml:"logging"`
+	Server       Server        `toml:"server"`
+	Database     Database      `toml:"database"`
+	Metrics      Metrics       `toml:"metrics"`
+	CommandTypes []CommandType `toml:"command_types"`
 }
 
 func Load(path string) (*Config, error) {
