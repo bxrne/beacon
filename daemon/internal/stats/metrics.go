@@ -4,39 +4,10 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"sort"
 	"time"
+
+	metrics "github.com/bxrne/beacon/aggregator/pkg/types"
 )
-
-type Metric struct {
-	Type       string `json:"type"`
-	Value      string `json:"value"`
-	Unit       string `json:"unit"`
-	RecordedAt string `json:"recorded_at"`
-}
-
-type DeviceMetrics struct {
-	Metrics  []Metric `json:"metrics"`
-	Hostname string   `json:"hostname"`
-}
-
-func (d *DeviceMetrics) String() string {
-	sort.Slice(d.Metrics, func(i, j int) bool {
-		return d.Metrics[i].Type < d.Metrics[j].Type
-	})
-
-	metricsStr := ""
-	// type: value, type: value, recorded_at: time
-	for _, metric := range d.Metrics {
-		metricsStr += fmt.Sprintf("%s: %s, ", metric.Type, metric.Value)
-	}
-	if len(metricsStr) > 0 {
-		metricsStr = metricsStr[:len(metricsStr)-2] // Remove trailing comma and space
-	}
-	metricsStr += fmt.Sprintf(", recorded_at: %s", d.Metrics[0].RecordedAt) // WARN: Only first metric's recorded_at is used
-
-	return metricsStr
-}
 
 func GetDeviceUUID() string {
 	cmd := exec.Command("hostid") // Get host identifier (available on Unix-like systems)
@@ -44,8 +15,8 @@ func GetDeviceUUID() string {
 	return string(output)
 }
 
-func CollectMetrics() (*DeviceMetrics, error) {
-	var deviceMetrics DeviceMetrics
+func CollectMetrics() (*metrics.DeviceMetrics, error) {
+	var deviceMetrics metrics.DeviceMetrics
 
 	hostname, err := os.Hostname()
 	if err != nil {
@@ -63,7 +34,7 @@ func CollectMetrics() (*DeviceMetrics, error) {
 	if err != nil {
 		return nil, err
 	}
-	deviceMetrics.Metrics = append(deviceMetrics.Metrics, Metric{
+	deviceMetrics.Metrics = append(deviceMetrics.Metrics, metrics.Metric{
 		Type:       "memory_used",
 		Value:      fmt.Sprintf("%.2f", vmStat.UsedPercent),
 		Unit:       "%",
@@ -75,7 +46,7 @@ func CollectMetrics() (*DeviceMetrics, error) {
 	if err != nil {
 		return nil, err
 	}
-	deviceMetrics.Metrics = append(deviceMetrics.Metrics, Metric{
+	deviceMetrics.Metrics = append(deviceMetrics.Metrics, metrics.Metric{
 		Type:       "disk_used",
 		Value:      fmt.Sprintf("%.2f", diskUsage.UsedPercent),
 		Unit:       "%",
@@ -87,7 +58,7 @@ func CollectMetrics() (*DeviceMetrics, error) {
 	if err != nil {
 		return nil, err
 	}
-	deviceMetrics.Metrics = append(deviceMetrics.Metrics, Metric{
+	deviceMetrics.Metrics = append(deviceMetrics.Metrics, metrics.Metric{
 		Type:       "uptime",
 		Value:      fmt.Sprintf("%d", uptime),
 		Unit:       "seconds",
