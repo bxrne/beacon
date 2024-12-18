@@ -32,3 +32,15 @@ type Metric struct {
 	Device     Device     `gorm:"foreignKey:DeviceID"`
 	RecordedAt time.Time  `gorm:"not null"`
 }
+
+type Command struct {
+	gorm.Model
+	Name     string `gorm:"unique;not null"`
+	DeviceID uint
+	Device   Device `gorm:"foreignKey:DeviceID"`
+}
+
+type CommandType struct {
+	gorm.Model
+	Name string `gorm:"unique;not null"`
+}

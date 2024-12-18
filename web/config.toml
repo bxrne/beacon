@@ -20,3 +20,4 @@ dsn = "core.db"
 [metrics]
 types = ["memory_used", "disk_used", "uptime", "car_light", "ped_light"]
 units = ["percent", "seconds", "color"]
+commands = ["notify", "reboot"]
