@@ -12,4 +12,4 @@ level = "debug"
 [targets]
 hosts = ["192.168.149.251", "localhost"]
 ports = ["80", "4000"]
-frequencies = [1, 1]
+frequencies = [3, 1]

@@ -27,7 +27,6 @@ func (MemoryMon) VirtualMemory() (*mem.VirtualMemoryStat, error) {
 	if err != nil {
 		return nil, err
 	}
-	vmStat.UsedPercent = vmStat.UsedPercent
 	return vmStat, nil
 }
 
@@ -38,7 +37,6 @@ func (DiskMon) Usage(path string) (*disk.UsageStat, error) {
 	if err != nil {
 		return nil, err
 	}
-	usageStat.UsedPercent = usageStat.UsedPercent
 	return usageStat, nil
 }
 

@@ -28,9 +28,14 @@ func (d *DeviceMetrics) String() string {
 	})
 
 	metricsStr := ""
+	// type: value, type: value, recorded_at: time
 	for _, metric := range d.Metrics {
-		metricsStr += fmt.Sprintf("%s: %s %s | ", metric.Type, metric.Value, metric.Unit) // Adjusted formatting
+		metricsStr += fmt.Sprintf("%s: %s, ", metric.Type, metric.Value)
 	}
+	if len(metricsStr) > 0 {
+		metricsStr = metricsStr[:len(metricsStr)-2] // Remove trailing comma and space
+	}
+	metricsStr += fmt.Sprintf(", recorded_at: %s", d.Metrics[0].RecordedAt) // WARN: Only first metric's recorded_at is used
 
 	return metricsStr
 }
@@ -62,7 +67,7 @@ func CollectMetrics() (*DeviceMetrics, error) {
 		return nil, err
 	}
 	deviceMetrics.Metrics = append(deviceMetrics.Metrics, Metric{
-		Type:       "MemoryUsedPercent",
+		Type:       "memory_used",
 		Value:      fmt.Sprintf("%.2f", vmStat.UsedPercent),
 		Unit:       "%",
 		RecordedAt: time.Now().UTC().Format(time.RFC3339),
@@ -76,7 +81,7 @@ func CollectMetrics() (*DeviceMetrics, error) {
 		return nil, err
 	}
 	deviceMetrics.Metrics = append(deviceMetrics.Metrics, Metric{
-		Type:       "DiskUsedPercent",
+		Type:       "disk_used",
 		Value:      fmt.Sprintf("%.2f", diskUsage.UsedPercent),
 		Unit:       "%",
 		RecordedAt: time.Now().UTC().Format(time.RFC3339),
@@ -90,7 +95,7 @@ func CollectMetrics() (*DeviceMetrics, error) {
 		return nil, err
 	}
 	deviceMetrics.Metrics = append(deviceMetrics.Metrics, Metric{
-		Type:       "Uptime",
+		Type:       "uptime",
 		Value:      fmt.Sprintf("%d", uptime),
 		Unit:       "seconds",
 		RecordedAt: time.Now().UTC().Format(time.RFC3339),
