@@ -218,6 +218,8 @@ var SwaggerInfo = &swag.Spec{
 	Description:      "Collects device and metric data from clients",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
+	LeftDelim:        "{{",
+	RightDelim:       "}}",
 }
 
 func init() {

@@ -141,4 +141,5 @@ func (s *Server) setupRoutes() {
 	apiRouter.HandleFunc("/device", s.handleGetDevices).Methods(http.MethodGet)
 	apiRouter.HandleFunc("/metrics", s.handleGetMetrics).Methods(http.MethodGet)
 	apiRouter.HandleFunc("/command", s.handleCommand).Methods(http.MethodPost)
+	apiRouter.HandleFunc("/command", s.handleGetCommands).Methods(http.MethodGet)
 }

@@ -26,7 +26,12 @@ func main() {
 	for _, p := range pollers {
 		log.Infof("Starting poller for host %s", p.Host)
 		go p.Start()
+		defer p.Stop()
 	}
+
+	// cmdPoller := poller.NewCommandPoller(db_conn, log) // Adjust port as needed
+	// cmdPoller.Start()
+	// defer cmdPoller.Stop()
 
 	select {} // Block forever
 }

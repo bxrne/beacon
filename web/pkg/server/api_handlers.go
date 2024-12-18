@@ -329,3 +329,14 @@ func (s *Server) handleCommand(w http.ResponseWriter, r *http.Request) {
 
 	s.respondJSON(w, http.StatusOK, map[string]string{"status": "success", "message": "Command queued successfully"})
 }
+
+func (s *Server) handleGetCommands(w http.ResponseWriter, r *http.Request) {
+	var commands []db.Command
+	if err := s.db.Preload("Device").Find(&commands).Error; err != nil {
+		s.logger.Errorf("handleGetCommands: failed to get commands: %s", err)
+		s.respondJSON(w, http.StatusInternalServerError, errorResponse{Error: "failed to get commands"})
+		return
+	}
+
+	s.respondJSON(w, http.StatusOK, commands)
+}
