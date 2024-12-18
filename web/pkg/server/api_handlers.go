@@ -240,11 +240,14 @@ func (s *Server) handleGetMetrics(w http.ResponseWriter, r *http.Request) {
 
 	var responseMetrics interface{}
 	if isChartsView {
-		// Filter for percent-based metrics and keep only the latest for each type
+		// For charts view, we want both percent and color metrics
 		latestMetrics := make(map[string]db.Metric)
 		for _, metric := range metrics {
-			if metric.Unit.Name == "percent" {
-				latestMetrics[metric.Type.Name] = metric
+			if metric.Unit.Name == "percent" || metric.Unit.Name == "color" {
+				existing, exists := latestMetrics[metric.Type.Name]
+				if !exists || metric.RecordedAt.After(existing.RecordedAt) {
+					latestMetrics[metric.Type.Name] = metric
+				}
 			}
 		}
 
@@ -252,6 +255,11 @@ func (s *Server) handleGetMetrics(w http.ResponseWriter, r *http.Request) {
 		var latestMetricsSlice []db.Metric
 		for _, metric := range latestMetrics {
 			latestMetricsSlice = append(latestMetricsSlice, metric)
+		}
+
+		// Ensure we always return an empty array instead of null
+		if latestMetricsSlice == nil {
+			latestMetricsSlice = []db.Metric{}
 		}
 		responseMetrics = latestMetricsSlice
 	} else {
